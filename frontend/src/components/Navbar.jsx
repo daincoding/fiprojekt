@@ -2,26 +2,18 @@ import { Link } from "react-router-dom";
 
 function Navbar() {
     return (
-        <nav className="bg-gray-900 text-white p-4 flex items-center">
-            {/* Logo / Titel */}
-            <div className="text-xl font-bold flex-1">
-                <Link to="/">Rechnungsgenerator</Link>
-            </div>
-
-            {/* Navigation Links */}
-            <div className="space-x-6">
-                <Link to="/firmen" className="hover:text-gray-400">
-                    Firmen
+        <nav className="navbar sticky-top">
+            <div className="container-page flex items-center justify-between">
+                <Link to="/" className="font-extrabold text-white text-2xl tracking-wide">
+                    Rechnungsgenerator
                 </Link>
-                <Link to="/kunden" className="hover:text-gray-400">
-                    Kunden
-                </Link>
-                <Link to="/rechnung-neu" className="hover:text-gray-400">
-                    Neue Rechnung
-                </Link>
-                <Link to="/rechnungen" className="hover:text-gray-400">
-                    Rechnungs Übersicht
-                </Link>
+                <div className="flex gap-8 text-lg font-semibold">
+                    <Link to="/firmen" className="hover:opacity-80">Firmen</Link>
+                    <Link to="/kunden" className="hover:opacity-80">Kunden</Link>
+                    <Link to="/rechnung-neu" className="hover:opacity-80">Neue Rechnung</Link>
+                    <Link to="/rechnungen" className="hover:opacity-80">Rechnungs Übersicht</Link>
+                    <Link to="/apitest" className="hover:opacity-80">API Test</Link>
+                </div>
             </div>
         </nav>
     );

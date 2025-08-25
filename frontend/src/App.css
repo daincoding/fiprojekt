@@ -1,1 +1,180 @@
 @import "tailwindcss";
+
+/* =========================
+   Sparkassen-Dark Theme Tokens
+   ========================= */
+:root {
+    /* Background */
+    --cl-crust: #0f0f10;
+    --cl-mantle: #17181a;
+    --cl-base:   #1b1c1f;
+
+    /* Surfaces */
+    --cl-surface0: #222428;
+    --cl-surface1: #2a2d32;
+    --cl-surface2: #32353b;
+
+    /* Text */
+    --cl-text: #f5f7fa;
+    --cl-subtext1: #cfd5dc;
+    --cl-subtext0: #a8b0ba;
+
+    /* Brand & Accents (Sparkasse-like) */
+    --cl-brand: #e2001a;      /* Sparkassen-Rot */
+    --cl-brand-600: #c40016;  /* hover */
+    --cl-brand-700: #a30012;  /* active */
+
+    /* Semantic */
+    --cl-success: #44c767;    /* grün für Beträge */
+    --cl-warning: #ffb74d;
+    --cl-danger:  #ef5350;
+    --cl-info:    #57c2df;
+
+    /* Borders / focus */
+    --cl-border: #3a3e45;
+    --cl-focus:  #7dd3fc;
+}
+
+html, body, #root {
+    height: 100%;
+}
+
+body {
+    background: var(--cl-base);
+    color: var(--cl-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ====== Utilities ====== */
+.text-muted   { color: var(--cl-subtext0); }
+.text-money   { color: var(--cl-success); }
+.text-danger  { color: var(--cl-danger); }
+.text-warning { color: var(--cl-warning); }
+
+.bg-surface-0 { background: var(--cl-surface0); }
+.bg-surface-1 { background: var(--cl-surface1); }
+.bg-surface-2 { background: var(--cl-surface2); }
+
+.border-default { border: 1px solid var(--cl-border); }
+.shadow-soft { box-shadow: 0 6px 20px rgba(0,0,0,.35); }
+
+/* ====== Navbar ====== */
+.navbar {
+    background: var(--cl-brand);
+    color: #fff;
+}
+.navbar a { color: #fff; }
+.navbar a:hover { opacity: .9; }
+
+/* ====== Buttons (base + variants) ====== */
+.btn {
+    @apply inline-flex items-center justify-center font-medium rounded-xl px-4 py-2 transition;
+    border: 1px solid transparent;
+}
+
+/* Solid */
+.btn-primary   { background: var(--cl-brand);   color: #fff; }
+.btn-success   { background: var(--cl-success); color: #0b1a10; }
+.btn-warning   { background: var(--cl-warning); color: #1a1307; }
+.btn-danger    { background: var(--cl-danger);  color: #180a0a; }
+.btn-neutral   { background: var(--cl-surface2); color: var(--cl-text); }
+
+/* Outline */
+.btn-outline {
+    background: transparent;
+    color: var(--cl-text);
+    border-color: var(--cl-border);
+}
+.btn-outline-primary { color: var(--cl-brand); border-color: var(--cl-brand); }
+
+/* Ghost (link-like on dark bg) */
+.btn-ghost { background: transparent; color: var(--cl-text); }
+
+/* States */
+.btn:hover { filter: brightness(1.05); }
+.btn-primary:hover { background: var(--cl-brand-600); }
+.btn-primary:active { background: var(--cl-brand-700); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Icon spacing helper */
+.btn .icon-left { margin-right: .5rem; }
+.btn .icon-right { margin-left: .5rem; }
+
+/* ====== Card ====== */
+.card {
+    background: var(--cl-surface0);
+    border: 1px solid var(--cl-border);
+    border-radius: 1rem;
+    padding: 1rem;
+    box-shadow: 0 6px 16px rgba(0,0,0,.28);
+}
+
+/* ====== Inputs / Selects / Textareas ====== */
+.input, .select, .textarea {
+    width: 100%;
+    background: var(--cl-surface1);
+    color: var(--cl-text);
+    border: 1px solid var(--cl-border);
+    border-radius: 0.75rem;
+    padding: .625rem .875rem;
+}
+.input::placeholder, .textarea::placeholder { color: var(--cl-subtext0); }
+.input:focus, .select:focus, .textarea:focus {
+    outline: 2px solid var(--cl-focus);
+    outline-offset: 2px;
+    border-color: transparent;
+}
+
+/* Input group (label + helper) */
+.form-label { color: var(--cl-subtext1); font-size: .875rem; }
+.form-hint  { color: var(--cl-subtext0); font-size: .75rem; }
+
+/* ====== Tables (for Rechnungs-Übersicht) ====== */
+.table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px; /* row gaps */
+}
+.table thead th {
+    text-align: left;
+    color: var(--cl-subtext1);
+    font-weight: 600;
+    padding: .5rem .75rem;
+}
+.table tbody tr {
+    background: var(--cl-surface0);
+    border: 1px solid var(--cl-border);
+}
+.table tbody td {
+    padding: .75rem .75rem;
+    border-top: 1px solid var(--cl-border);
+}
+.table tbody tr:first-child td { border-top: none; }
+.table .badge {
+    background: var(--cl-surface2);
+    color: var(--cl-text);
+    border: 1px solid var(--cl-border);
+    border-radius: 9999px;
+    padding: .125rem .5rem;
+    font-size: .75rem;
+}
+
+/* ====== Pills / Badges ====== */
+.badge-success { background: rgba(68,199,103,.15); color: var(--cl-success); border: 1px solid rgba(68,199,103,.35); }
+.badge-danger  { background: rgba(239,83,80,.15);  color: var(--cl-danger);  border: 1px solid rgba(239,83,80,.35); }
+.badge-info    { background: rgba(87,194,223,.15); color: var(--cl-info);    border: 1px solid rgba(87,194,223,.35); }
+
+/* ====== Layout helpers ====== */
+.container-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.25rem;
+}
+
+/* Sticky top bar spacing (optional) */
+.sticky-top { position: sticky; top: 0; z-index: 50; }
+
+/* ====== Links ====== */
+a { color: var(--cl-info); }
+a:hover { text-decoration: underline; }
