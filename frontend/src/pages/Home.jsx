@@ -1,49 +1,82 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import { FiFileText, FiUsers, FiHome, FiDownload } from "react-icons/fi";
+import { FaBuilding, FaRegCheckCircle } from "react-icons/fa";
 
 const Home = () => {
     return (
-        <div className="container-page space-y-8">
-            <h1 className="text-3xl font-bold">Design Showcase</h1>
+        <div className="flex flex-col items-center justify-center min-h-screen text-center">
+            {/* Hero */}
+            <section className="container-page py-12 md:py-16 flex flex-col items-center">
+                <div className="max-w-3xl">
+                    <h1 className="text-3xl md:text-5xl font-extrabold leading-tight">
+            <span className="inline-flex items-center justify-center gap-2">
+              <FiHome className="text-cl-brand text-4xl" />
+              Rechnungsgenerator
+            </span>
+                        <br className="hidden md:block" />
+                        <span className="text-money">Schnell. Einfach. Digital.</span>
+                    </h1>
 
-            <div className="space-x-4">
-                <button className="btn btn-primary">Speichern</button>
-                <button className="btn btn-outline-primary">Als PDF</button>
-                <button className="btn btn-ghost">Abbrechen</button>
-                <button className="btn btn-success">Bezahlt</button>
-            </div>
+                    <p className="text-lg text-muted mt-4">
+                        Mit dem <strong>Rechnungsgenerator</strong> kannst du deine Firma anlegen,
+                        Kunden verwalten und professionelle Rechnungen in Sekunden erstellen –
+                        inklusive <em>PDF-Export</em>.
+                    </p>
 
-            <div className="card max-w-md">
-                <h2 className="text-xl font-semibold mb-2">Card Beispiel</h2>
-                <p className="text-muted">So sehen unsere Oberflächen aus.</p>
-            </div>
+                    <div className="mt-6 flex flex-wrap justify-center gap-3">
+                        <Link to="/register" className="btn btn-primary">
+                            <FaRegCheckCircle className="icon-left" /> Kostenlos starten
+                        </Link>
+                        <Link to="/login" className="btn btn-outline-primary">
+                            <FiHome className="icon-left" /> Login
+                        </Link>
+                    </div>
 
-            <div className="max-w-md space-y-2">
-                <label className="form-label">Kundennummer</label>
-                <input className="input" placeholder="z. B. 10042" />
-                <p className="form-hint">Wird auf der Rechnung angezeigt.</p>
-            </div>
+                    <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm text-muted">
+                        <div className="badge-success rounded-full flex items-center gap-1">
+                            <FaBuilding /> H2 Demo
+                        </div>
+                        <div className="badge-info rounded-full flex items-center gap-1">
+                            <FiDownload /> PDF-Export
+                        </div>
+                        <div className="badge-success rounded-full flex items-center gap-1">
+                            <FiUsers /> Mehrmandantenfähig
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-            <table className="table max-w-2xl">
-                <thead>
-                <tr>
-                    <th>Rechnung</th>
-                    <th>Status</th>
-                    <th>Betrag</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <td>#2025-001</td>
-                    <td><span className="badge-success">Bezahlt</span></td>
-                    <td className="text-money">+1.200 €</td>
-                </tr>
-                <tr>
-                    <td>#2025-002</td>
-                    <td><span className="badge-danger">Offen</span></td>
-                    <td className="text-danger">-300 €</td>
-                </tr>
-                </tbody>
-            </table>
+            {/* Feature Cards */}
+            <section className="container-page grid md:grid-cols-3 gap-6 pb-12">
+                <div className="card text-left">
+                    <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
+                        <FaBuilding className="text-cl-brand" /> Firma &amp; Branding
+                    </h3>
+                    <p className="text-muted">
+                        Firmenprofil mit Adresse, USt-ID und Logo. Automatische Übernahme in jede Rechnung.
+                    </p>
+                </div>
+
+                <div className="card text-left">
+                    <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
+                        <FiUsers className="text-cl-brand" /> Kundenverwaltung
+                    </h3>
+                    <p className="text-muted">
+                        Kunden anlegen, bearbeiten und wiederverwenden. Mit Suche &amp; Filter.
+                    </p>
+                </div>
+
+                <div className="card text-left">
+                    <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
+                        <FiFileText className="text-cl-brand" /> Rechnungen &amp; PDF
+                    </h3>
+                    <p className="text-muted">
+                        Positionen mit Netto/Brutto, MwSt., Fälligkeitsdatum &amp; Status
+                        (Entwurf, Offen, Bezahlt). Export als PDF.
+                    </p>
+                </div>
+            </section>
         </div>
     );
 };

@@ -165,6 +165,14 @@ body {
 .badge-danger  { background: rgba(239,83,80,.15);  color: var(--cl-danger);  border: 1px solid rgba(239,83,80,.35); }
 .badge-info    { background: rgba(87,194,223,.15); color: var(--cl-info);    border: 1px solid rgba(87,194,223,.35); }
 
+.badge,
+.badge-success,
+.badge-danger,
+.badge-info {
+    border-radius: 9999px; /* komplett rund */
+    padding: 0.25rem 0.75rem;
+}
+
 /* ====== Layout helpers ====== */
 .container-page {
     max-width: 1200px;
