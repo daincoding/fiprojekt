@@ -1,0 +1,33 @@
+package de.brights.rechnungsgenerator.dto;
+
+import jakarta.persistence.*;
+import java.util.List;
+
+@Entity
+public class Firma {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+    private String strasse;
+    private String plz;
+    private String ort;
+    private String email;
+    private String ustIdNr;
+    private String telefon;
+    private Boolean umsatzsteuer;
+
+    @ManyToOne
+    private User user;
+
+    @OneToMany(mappedBy = "firma")
+    private List<Kunde> kunden;
+
+    @OneToMany(mappedBy = "firma")
+    private List<Rechnung> rechnungen;
+
+    // Getter & Setter
+    // ...
+}
