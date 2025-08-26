@@ -1,11 +1,18 @@
 package de.brights.rechnungsgenerator.dto;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.List;
 
+@Setter
+@Getter
 @Entity
+@Table(name = "Benutzer")
 public class User {
 
+    // Getter & Setter
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -18,22 +25,4 @@ public class User {
     @OneToMany(mappedBy = "user")
     private List<Firma> firmen;
 
-    // Getter & Setter
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
-
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
-
-    public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
-
-    public List<Firma> getFirmen() { return firmen; }
-    public void setFirmen(List<Firma> firmen) { this.firmen = firmen; }
 }

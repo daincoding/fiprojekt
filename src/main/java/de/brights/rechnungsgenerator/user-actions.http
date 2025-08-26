@@ -27,3 +27,8 @@ Content-Type: application/json
   "username": "neuerUser",
   "password": "meinPasswort123"
 }
+
+### Logout testen
+GET http://localhost:8080/api/users/logout
+Accept: application/json
+
