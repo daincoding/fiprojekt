@@ -1,0 +1,29 @@
+### Benutzer erstellen
+POST http://localhost:8080/api/users/create
+Content-Type: application/json
+
+{
+  "username": "dominikTest",
+  "email": "dominik@example.com",
+  "password": "sicheresPasswort123",
+  "role": "ADMIN"
+}
+
+### Benutzer registrieren
+POST http://localhost:8080/api/users/register
+Content-Type: application/json
+
+{
+  "username": "neuerUser",
+  "email": "neuer@example.com",
+  "password": "meinPasswort123"
+}
+
+### Login testen
+POST http://localhost:8080/api/users/login
+Content-Type: application/json
+
+{
+  "username": "neuerUser",
+  "password": "meinPasswort123"
+}
