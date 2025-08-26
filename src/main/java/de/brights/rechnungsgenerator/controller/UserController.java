@@ -38,4 +38,10 @@ public class UserController {
         User user = userService.login(username, password);
         return ResponseEntity.ok(user);
     }
+
+    @GetMapping("/logout")
+    public ResponseEntity<String> logout() {
+        userService.logout();
+        return ResponseEntity.ok("Logout erfolgreich");
+    }
 }

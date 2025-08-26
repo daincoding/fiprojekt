@@ -37,5 +37,9 @@ public class UserService {
 
         return user;
     }
+
+    public void logout() {
+        System.out.println("Benutzer wurde ausgeloggt.");
+    }
 }
 
