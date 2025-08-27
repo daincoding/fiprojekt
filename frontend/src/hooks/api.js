@@ -93,8 +93,10 @@ export const createInvoice = (companyId, customerId, invoice) =>
     })).then(asJson);
 
 // list: über companyId
-export const getInvoices = (companyId) =>
-    fetch(`${API_URL}/invoices?companyId=${companyId}`, withAuth()).then(asJson);
+export const getInvoices = (companyId) => {
+    const url = companyId ? `${API_URL}/invoices?companyId=${companyId}` : `${API_URL}/invoices`;
+    return fetch(url, withAuth()).then(asJson);
+};
 
 export const getInvoice = (id) =>
     fetch(`${API_URL}/invoices/${id}`, withAuth()).then(asJson);

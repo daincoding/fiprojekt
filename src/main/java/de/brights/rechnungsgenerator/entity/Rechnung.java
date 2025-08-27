@@ -24,6 +24,9 @@ public class Rechnung {
     @Column(nullable = false)
     private LocalDate datum;
 
+    @Column(nullable = false)
+    private LocalDate deadline;
+
     private String leistung;
 
     @Column(nullable = false)

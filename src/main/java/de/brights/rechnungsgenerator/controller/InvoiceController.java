@@ -45,10 +45,15 @@ public class InvoiceController {
     }
 
     @GetMapping
-    public List<RechnungDto> list(@RequestParam Long companyId) {
+    public List<RechnungDto> list(@RequestParam(required = false) Long companyId) {
         var owner = current.require();
-        var firma = firmaService.getOwned(companyId, owner);
-        return service.listByFirma(firma).stream().map(RechnungDto::from).toList();
+        if (companyId == null) {
+            // Alle Rechnungen aller Firmen des Users
+            return service.listAllByOwner(owner).stream().map(RechnungDto::from).toList();
+        } else {
+            var firma = firmaService.getOwned(companyId, owner);
+            return service.listByFirma(firma).stream().map(RechnungDto::from).toList();
+        }
     }
 
     @GetMapping("/{id}")

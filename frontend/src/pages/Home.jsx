@@ -35,13 +35,13 @@ const Home = () => {
 
                     <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm text-muted">
                         <div className="badge-success rounded-full flex items-center gap-1">
-                            <FaBuilding /> H2 Demo
+                            <FaBuilding /> Alle Rechnungen
                         </div>
                         <div className="badge-info rounded-full flex items-center gap-1">
                             <FiDownload /> PDF-Export
                         </div>
                         <div className="badge-success rounded-full flex items-center gap-1">
-                            <FiUsers /> Mehrmandantenfähig
+                            <FiUsers /> Kunden Übersicht
                         </div>
                     </div>
                 </div>

@@ -26,6 +26,12 @@ public class RechnungService {
         if (!k.getFirma().getId().equals(f.getId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kunde gehört nicht zur Firma");
         }
+        r.setDeadline(
+                r.getDeadline() == null ? r.getDatum() : r.getDeadline()
+        );
+        if (r.getDeadline().isBefore(r.getDatum())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Deadline liegt vor dem Rechnungsdatum");
+        }
         r.setFirma(f);
         r.setKunde(k);
         return repo.save(r);
@@ -37,6 +43,10 @@ public class RechnungService {
 
     public List<Rechnung> listByKunde(Kunde k) {
         return repo.findByKunde(k);
+    }
+
+    public List<Rechnung> listAllByOwner(Nutzer owner) {
+        return repo.findByFirmaNutzer(owner);
     }
 
     public Rechnung get(Long id) {
