@@ -1,4 +1,6 @@
+// src/context/AuthContext.jsx
 import { createContext, useContext, useEffect, useState } from "react";
+import * as api from "../hooks/api.js";
 
 const AuthContext = createContext(null);
 
@@ -10,15 +12,16 @@ export function AuthProvider({ children }) {
         if (saved) setUser(JSON.parse(saved));
     }, []);
 
-    function login({ email }) {
-        const fakeUser = { id: "u1", email };
-        setUser(fakeUser);
-        localStorage.setItem("auth_user", JSON.stringify(fakeUser));
+    async function login({ email, password }) {
+        const u = await api.login({ email, password }); // -> {id,email,role}
+        setUser(u);
+        localStorage.setItem("auth_user", JSON.stringify(u));
     }
 
-    function register({ email }) {
-        // gleiches Verhalten wie login – später echte API
-        login({ email });
+    async function register({ email, password }) {
+        const u = await api.registerUser({ email, password }); // -> {id,email,role}
+        setUser(u);
+        localStorage.setItem("auth_user", JSON.stringify(u));
     }
 
     function logout() {
@@ -32,7 +35,4 @@ export function AuthProvider({ children }) {
         </AuthContext.Provider>
     );
 }
-
-export function useAuth() {
-    return useContext(AuthContext);
-}
+export function useAuth() { return useContext(AuthContext); }
