@@ -32,3 +32,20 @@ Content-Type: application/json
 GET http://localhost:8080/api/users/logout
 Accept: application/json
 
+### Firma anlegen
+POST http://localhost:8080/api/companies
+Content-Type: application/json
+
+{
+  "name": "CodeCraft GmbH",
+  "strasse": "Techstraße 42",
+  "plz": "30519",
+  "ort": "Hannover",
+  "email": "info@codecraft.de",
+  "ustIdNr": "DE123456789",
+  "telefon": "+49 511 123456",
+  "umsatzsteuer": true,
+  "user": {
+    "id": 1
+  }
+}
