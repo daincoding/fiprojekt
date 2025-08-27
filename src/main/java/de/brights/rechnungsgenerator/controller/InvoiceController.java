@@ -54,7 +54,7 @@ public class InvoiceController {
     @GetMapping("/{id}")
     public RechnungDto get(@PathVariable Long id){
         var owner = current.require();
-        return RechnungDto.from(service.getOwned(id, owner)); // prüft firma.nutzer == owner
+        return RechnungDto.from(service.getOwned(id, owner));
     }
 
     @PutMapping("/{id}")
