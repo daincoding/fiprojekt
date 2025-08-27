@@ -2,11 +2,17 @@ package de.brights.rechnungsgenerator.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 public class SecurityConfig {
@@ -19,26 +25,35 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Für H2-Console: CSRF für diese Pfade ignorieren
+                // CORS
+                .cors(c -> c.configurationSource(corsConfigurationSource()))
+                // CSRF ignorieren für H2 + API
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**", "/api/**"))
-                // H2-Console läuft im Frame -> gleiches Origin erlauben
-                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
-                // Welche Requests dürfen ohne Login passieren?
+                // H2-Console in Frames erlauben
+                .headers(h -> h.frameOptions(f -> f.sameOrigin()))
+                // Freigaben
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/h2-console/**",
-                                "/api/users/register",
-                                "/api/users/login",
-                                "/api/users/create"
-                        ).permitAll()
-                        // alles andere aktuell auch offen (für DEV):
+                        .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll() // register/login
+                        // DEV: alles andere vorerst offen
                         .anyRequest().permitAll()
                 )
-                // keine Formular-Loginseite erzwingen
-                .formLogin(login -> login.disable())
-                // Basic-Auth optional aktivieren (kannst du auch weglassen)
+                .formLogin(l -> l.disable())
                 .httpBasic(Customizer.withDefaults());
-
         return http.build();
+    }
+
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration cfg = new CorsConfiguration();
+        cfg.setAllowedOrigins(List.of("http://localhost:5173"));
+        cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
+        cfg.setAllowedHeaders(List.of("Content-Type","Authorization","Accept"));
+        cfg.setAllowCredentials(true);
+        cfg.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", cfg);
+        return source;
     }
 }
