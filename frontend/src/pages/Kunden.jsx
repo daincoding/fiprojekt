@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { FiPlus, FiX, FiCheckCircle, FiUser, FiEdit2, FiSave, FiTrash2 } from "react-icons/fi";
-import { createCustomer, getCustomers, updateCustomer, deleteCustomer } from "../hooks/api.js";
+import { createCustomer, getCustomers, updateCustomer, deleteCustomer, getCompanies } from "../hooks/api.js";
 
 export default function Kunden() {
     const [customers, setCustomers] = useState([]);
+    const [companies, setCompanies] = useState([]);
+    const [selectedCompanyId, setSelectedCompanyId] = useState(""); // Firma-Auswahl für Liste
     const [selected, setSelected] = useState(null);
     const [open, setOpen] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -11,18 +13,31 @@ export default function Kunden() {
     const [err, setErr] = useState("");
 
     const [form, setForm] = useState({
-        name: "", strasse: "", plz: "", ort: "", email: "", telefon: ""
+        name: "", strasse: "", plz: "", ort: "", email: "", telefon: "", firmaId: ""
     });
 
     const [edit, setEdit] = useState(null);
     const [editing, setEditing] = useState(false);
 
-    useEffect(() => { load(); }, []);
+    useEffect(() => { loadCompanies(); }, []);
 
-    async function load() {
+    async function loadCompanies() {
         setErr("");
         try {
-            const list = await getCustomers();
+            const firms = await getCompanies();
+            setCompanies(firms);
+            if (firms.length > 0) {
+                setSelectedCompanyId(firms[0].id); // Standard: erste Firma wählen
+                await loadCustomers(firms[0].id);
+            }
+        } catch { setErr("Konnte Firmen nicht laden"); }
+    }
+
+    async function loadCustomers(companyId) {
+        if (!companyId) return;
+        setErr("");
+        try {
+            const list = await getCustomers(companyId);
             setCustomers(list);
             if (!selected && list.length) { setSelected(list[0]); setEdit(list[0]); }
         } catch { setErr("Konnte Kunden nicht laden"); }
@@ -34,10 +49,17 @@ export default function Kunden() {
     async function onCreate(e) {
         e.preventDefault(); setSaving(true); setErr("");
         try {
-            const saved = await createCustomer(form);
+            const saved = await createCustomer(form.firmaId, {
+                name: form.name,
+                strasse: form.strasse,
+                plz: form.plz,
+                ort: form.ort,
+                email: form.email,
+                telefon: form.telefon,
+            });
             setSuccess(true); setOpen(false);
-            setForm({ name: "", strasse: "", plz: "", ort: "", email: "", telefon: "" });
-            await load();
+            setForm({ name: "", strasse: "", plz: "", ort: "", email: "", telefon: "", firmaId: "" });
+            await loadCustomers(form.firmaId);
             setSelected(saved); setEdit(saved);
             setTimeout(() => setSuccess(false), 1600);
         } catch { setErr("Speichern fehlgeschlagen"); }
@@ -48,14 +70,7 @@ export default function Kunden() {
         if (!selected || !edit) return;
         setSaving(true); setErr("");
         try {
-            const upd = await updateCustomer(selected.id, {
-                name: edit.name ?? "",
-                strasse: edit.strasse ?? "",
-                plz: edit.plz ?? "",
-                ort: edit.ort ?? "",
-                email: edit.email ?? "",
-                telefon: edit.telefon ?? "",
-            });
+            const upd = await updateCustomer(selected.id, edit);
             setSuccess(true);
             const newList = customers.map(c => c.id === upd.id ? upd : c);
             setCustomers(newList);
@@ -104,13 +119,30 @@ export default function Kunden() {
 
             {err && <div className="badge-danger rounded-full px-3 py-1 mb-4 inline-block">{err}</div>}
 
+            {/* Firmen-Auswahl für Kundenliste */}
+            <div className="mb-4">
+                <label className="form-label">Firma wählen:</label>
+                <select
+                    className="input"
+                    value={selectedCompanyId}
+                    onChange={e => {
+                        setSelectedCompanyId(e.target.value);
+                        loadCustomers(e.target.value);
+                    }}
+                >
+                    {companies.map(f => (
+                        <option key={f.id} value={f.id}>{f.name}</option>
+                    ))}
+                </select>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Liste (1/3) */}
                 <div className="md:col-span-1">
                     <div className="card p-0">
-                        <div className="px-4 py-3 border-b border-default/60 font-semibold">Deine Kunden</div>
+                        <div className="px-4 py-3 border-b border-default/60 font-semibold">Kunden</div>
                         <ul className="max-h-[60vh] overflow-auto">
-                            {customers.length === 0 && <li className="px-4 py-4 text-muted">Noch kein Kunde angelegt.</li>}
+                            {customers.length === 0 && <li className="px-4 py-4 text-muted">Noch kein Kunde.</li>}
                             {customers.map(c => (
                                 <li
                                     key={c.id}
@@ -182,6 +214,22 @@ export default function Kunden() {
                             <FieldInput label="E-Mail" type="email" v={form.email} set={v => update("email", v)} />
                             <FieldInput label="Telefon" v={form.telefon} set={v => update("telefon", v)} />
 
+                            {/* Firma Auswahl */}
+                            <div className="md:col-span-2">
+                                <label className="form-label">Firma *</label>
+                                <select
+                                    className="input"
+                                    value={form.firmaId}
+                                    onChange={e => update("firmaId", e.target.value)}
+                                    required
+                                >
+                                    <option value="">Wähle eine Firma…</option>
+                                    {companies.map(f => (
+                                        <option key={f.id} value={f.id}>{f.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
                             <div className="md:col-span-2 flex justify-end gap-3 pt-2">
                                 <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>Abbrechen</button>
                                 <button type="submit" className="btn btn-primary" disabled={saving}>
@@ -204,6 +252,7 @@ function Display({ selected }) {
             <KV label="Ort" value={selected.ort} />
             <KV label="E-Mail" value={selected.email} />
             <KV label="Telefon" value={selected.telefon} />
+            <KV label="Firma-ID" value={selected.firma?.id || "—"} />
         </div>
     );
 }
