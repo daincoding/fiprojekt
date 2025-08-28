@@ -251,10 +251,12 @@ export default function Kunden() {
                         <form className="grid grid-cols-1 md:grid-cols-2 gap-4" onSubmit={onCreate}>
                             <FieldInput label="Name" required v={form.name} set={v => update("name", v)} span2 />
                             <FieldInput label="Straße" v={form.strasse} set={v => update("strasse", v)} />
-                            <FieldInput label="PLZ" v={form.plz} set={v => update("plz", v)} />
+                            <FieldInput label="PLZ" v={form.plz} set={v => update("plz", v)} pattern="\d{5}"
+                                        title="Bitte eine gültige deutsche Postleitzahl (5 Ziffern) eingeben" />
                             <FieldInput label="Ort" v={form.ort} set={v => update("ort", v)} />
-                            <FieldInput label="E-Mail" type="email" v={form.email} set={v => update("email", v)} />
-                            <FieldInput label="Telefon" v={form.telefon} set={v => update("telefon", v)} />
+                            <FieldInput label="E-Mail" type="email" v={form.email} set={v => update("email", v)} required />
+                            <FieldInput label="Telefon" v={form.telefon} set={v => update("telefon", v)} pattern="^(\+49|0)[1-9][0-9\s\-]{3,}$"
+                                        title="Bitte eine gültige deutsche Telefonnummer eingeben" />
 
                             {/* Firma Auswahl */}
                             <div className="md:col-span-2">
@@ -304,10 +306,12 @@ function EditForm({ edit, onChange }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FieldInput label="Name" required v={edit?.name ?? ""} set={v => onChange("name", v)} span2 />
             <FieldInput label="Straße" v={edit?.strasse ?? ""} set={v => onChange("strasse", v)} />
-            <FieldInput label="PLZ" v={edit?.plz ?? ""} set={v => onChange("plz", v)} />
+            <FieldInput label="PLZ" v={edit?.plz ?? ""} set={v => onChange("plz", v)} pattern="\d{5}"
+                        title="Bitte eine gültige deutsche Postleitzahl eingeben" />
             <FieldInput label="Ort" v={edit?.ort ?? ""} set={v => onChange("ort", v)} />
-            <FieldInput label="E-Mail" type="email" v={edit?.email ?? ""} set={v => onChange("email", v)} />
-            <FieldInput label="Telefon" v={edit?.telefon ?? ""} set={v => onChange("telefon", v)} />
+            <FieldInput label="E-Mail" type="email" v={edit?.email ?? ""} set={v => onChange("email", v)} required />
+            <FieldInput label="Telefon" v={edit?.telefon ?? ""} set={v => onChange("telefon", v)} pattern="^(\+49|0)[1-9][0-9\s\-]{3,}$"
+                        title="Bitte eine gültige Telefonnummer eingeben" />
         </div>
     );
 }
@@ -321,11 +325,19 @@ function KV({ label, value }) {
     );
 }
 
-function FieldInput({ label, v, set, type="text", required=false, span2=false }) {
+function FieldInput({ label, v, set, type = "text", required = false, span2 = false, pattern, title }) {
     return (
         <div className={span2 ? "md:col-span-2" : ""}>
             <label className="form-label">{label}{required && " *"}</label>
-            <input className="input" type={type} value={v} onChange={e => set(e.target.value)} required={required} />
+            <input
+                className="input"
+                type={type}
+                value={v}
+                onChange={e => set(e.target.value)}
+                required={required}
+                pattern={pattern}
+                title={title}
+            />
         </div>
     );
 }
