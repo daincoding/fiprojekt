@@ -4,6 +4,7 @@ import { FiRefreshCw, FiClock, FiFileText, FiAlertTriangle, FiCheckCircle } from
 import { LuEuro } from "react-icons/lu";
 import { getCompanies, getInvoices, getCustomers, updateInvoiceStatus } from "../hooks/api.js";
 import InvoiceFilters from "../components/InvoiceFilters.jsx";
+import InvoicePreview from "../components/InvoicePreview.jsx";
 
 const STATI = ["OFFEN", "BEZAHLT", "STORNIERT"];
 
@@ -21,6 +22,8 @@ export default function Rechnungen() {
     const [statusFilter, setStatusFilter] = useState("");
     const [sortBy, setSortBy] = useState("deadline-asc");
     const [search, setSearch] = useState("");
+
+    const [previewId, setPreviewId] = useState(null);
 
     // Filter Funktionen
     const visibleInvoices = useMemo(() => {
@@ -205,21 +208,29 @@ export default function Rechnungen() {
                             inv={inv}
                             customerName={labelForCustomer(inv.kundeId)}
                             onChangeStatus={onChangeStatus}
+                            onPreview={setPreviewId}   // <-- neue Prop
                         />
                     ))}
                 </div>
             )}
+            <InvoicePreview
+                invoiceId={previewId}
+                open={!!previewId}
+                onClose={() => setPreviewId(null)}
+            />
         </div>
+
     );
+
 }
 
-function InvoiceCard({ inv, customerName, onChangeStatus }) {
+function InvoiceCard({ inv, customerName, onChangeStatus, onPreview }) {
     const cd = useCountdown(inv.deadline, inv.zahlungsstatus);
 
     return (
         <div className="card h-full flex flex-col gap-3">
             <div className="flex items-start justify-between gap-2">
-                <div>
+                <div onClick={() => onPreview(inv.id)} className="cursor-pointer">
                     <div className="text-xs text-muted">Rechnung</div>
                     <div className="text-lg font-semibold">{inv.rechnungsnummer}</div>
                 </div>
@@ -228,16 +239,21 @@ function InvoiceCard({ inv, customerName, onChangeStatus }) {
 
             <Row label="Kunde" value={customerName} />
             <Row label="Datum" value={formatDate(inv.datum)} />
-            <Row label="Fällig bis" value={
-                <span className="inline-flex items-center gap-2">
-          {formatDate(inv.deadline)} {cd && <BadgeCountdown {...cd} />}
-        </span>
-            } />
+            <Row
+                label="Fällig bis"
+                value={
+                    <span className="inline-flex items-center gap-2">
+            {formatDate(inv.deadline)} {cd && <BadgeCountdown {...cd} />}
+          </span>
+                }
+            />
             <Row
                 label="Betrag"
-                value={<span className="text-money font-semibold inline-flex items-center gap-1">
-          {formatMoney(inv.betrag)}  <LuEuro />
-        </span>}
+                value={
+                    <span className="text-money font-semibold inline-flex items-center gap-1">
+            {formatMoney(inv.betrag)} <LuEuro />
+          </span>
+                }
             />
         </div>
     );
@@ -317,3 +333,4 @@ function formatMoney(n) {
     const num = typeof n === "number" ? n : parseFloat(n ?? 0);
     return num.toFixed(2);
 }
+
