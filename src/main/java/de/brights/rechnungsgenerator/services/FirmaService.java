@@ -79,4 +79,7 @@ public class FirmaService {
 
     @Transactional
     public void delete(Long id){ repo.deleteById(id); }
+
+
+    public Firma save(Firma f) { return repo.save(f); }
 }

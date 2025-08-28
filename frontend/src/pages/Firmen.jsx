@@ -1,7 +1,7 @@
 // src/pages/Firmen.jsx
 import { useEffect, useState } from "react";
 import { FiPlus, FiX, FiCheckCircle, FiBriefcase, FiEdit2, FiSave, FiTrash2 } from "react-icons/fi";
-import { createCompany, getCompanies, updateCompany, deleteCompany } from "../hooks/api.js";
+import { createCompany, getCompanies, updateCompany, deleteCompany, uploadCompanyLogo } from "../hooks/api.js";
 
 export default function Firmen() {
     const [companies, setCompanies] = useState([]);
@@ -18,6 +18,21 @@ export default function Firmen() {
     // Edit-Modell für rechte Seite
     const [edit, setEdit] = useState(null);
     const [editing, setEditing] = useState(false);
+    // Logo-Upload (Create & Edit)
+    const [logoCreate, setLogoCreate] = useState(null);
+    const [logoCreatePreview, setLogoCreatePreview] = useState("");
+    const [logoEdit, setLogoEdit] = useState(null);
+    const [logoEditPreview, setLogoEditPreview] = useState("");
+
+    const MAX_LOGO_SIZE = 2 * 1024 * 1024; // 2 MB
+    function validateAndSetLogo(file, setFile, setPreview) {
+        if (!file) return;
+        if (!file.type?.startsWith("image/")) { setErr("Nur Bilddateien sind erlaubt."); return; }
+        if (file.size > MAX_LOGO_SIZE) { setErr("Logo zu groß (max. 2 MB)."); return; }
+        setErr("");
+        setFile(file);
+        setPreview(URL.createObjectURL(file));
+        }
 
     useEffect(() => { load(); }, []);
 
@@ -37,8 +52,12 @@ export default function Firmen() {
         e.preventDefault(); setSaving(true); setErr("");
         try {
             const saved = await createCompany(form);
+            if (logoCreate) {
+                await uploadCompanyLogo(saved.id, logoCreate);
+            }
             setSuccess(true); setOpen(false);
             setForm({ name: "", strasse: "", plz: "", ort: "", email: "", ustIdNr: "", telefon: "", umsatzsteuer: true });
+            setLogoCreate(null); setLogoCreatePreview("");
             await load();
             setSelected(saved); setEdit(saved);
             setTimeout(() => setSuccess(false), 1600);
@@ -60,12 +79,16 @@ export default function Firmen() {
                 telefon: edit.telefon ?? "",
                 umsatzsteuer: !!edit.umsatzsteuer,
             });
+            if (logoEdit) {
+                await uploadCompanyLogo(upd.id, logoEdit);
+            }
             setSuccess(true);
             // Liste aktualisieren & Auswahl ersetzen
             const newList = companies.map(c => c.id === upd.id ? upd : c);
             setCompanies(newList);
             setSelected(upd);
             setEdit(upd);
+            setLogoEdit(null); setLogoEditPreview("");
             setEditing(false);
             setTimeout(() => setSuccess(false), 1600);
         } catch { setErr("Aktualisierung fehlgeschlagen"); }
@@ -159,10 +182,48 @@ export default function Firmen() {
                                 </div>
 
                                 {/* Anzeige oder Edit-Form */}
-                                {!editing ? (
-                                    <Display selected={selected} />
+                                {editing ? (
+                                    <>
+                                        <EditForm edit={edit} onChange={updateEdit} />
+
+                                        {/* Neues Logo (optional, max. 2 MB) */}
+                                        <div className="mt-2">
+                                            <label className="form-label">Neues Logo (optional, max. 2 MB)</label>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="input"
+                                                onChange={e =>
+                                                    validateAndSetLogo(
+                                                        e.target.files?.[0],
+                                                        setLogoEdit,
+                                                        setLogoEditPreview
+                                                    )
+                                                }
+                                            />
+                                            {(logoEditPreview || selected.logoUrl) && (
+                                                <img
+                                                    src={logoEditPreview || selected.logoUrl}
+                                                    alt="Logo"
+                                                    className="h-12 mt-2 rounded bg-white/5 p-1 border border-default/50"
+                                                />
+                                            )}
+                                        </div>
+                                    </>
                                 ) : (
-                                    <EditForm edit={edit} onChange={updateEdit} />
+                                    <>
+                                        {selected.logoUrl && (
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <img
+                                                    src={selected.logoUrl}
+                                                    alt="Logo"
+                                                    className="h-12 w-auto rounded bg-white/5 p-1 border border-default/50"
+                                                />
+                                                <span className="text-xs text-muted">Aktuelles Firmenlogo</span>
+                                            </div>
+                                        )}
+                                        <Display selected={selected} />
+                                    </>
                                 )}
                             </div>
                         )}
@@ -196,6 +257,20 @@ export default function Firmen() {
                                        checked={form.umsatzsteuer} onChange={e => update("umsatzsteuer", e.target.checked)} />
                                 <label htmlFor="umsatz" className="form-label m-0">Umsatzsteuerpflichtig</label>
                             </div>
+
+                              {/* Logo Upload (optional, max. 2 MB) */}
+                              <div className="md:col-span-2">
+                                <label className="form-label">Logo (optional, max. 2 MB)</label>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="input"
+                                  onChange={e => validateAndSetLogo(e.target.files?.[0], setLogoCreate, setLogoCreatePreview)}
+                                />
+                                {logoCreatePreview && (
+                                  <img src={logoCreatePreview} alt="Preview" className="h-12 mt-2 rounded bg-white/5 p-1 border border-default/50" />
+                                )}
+                              </div>
 
                             <div className="md:col-span-2 flex justify-end gap-3 pt-2">
                                 <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>Abbrechen</button>

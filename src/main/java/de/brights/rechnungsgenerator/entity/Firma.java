@@ -37,6 +37,8 @@ public class Firma {
     /** Falls das „umsatzsteuerpflichtig“ meint: boolean ok. */
     private Boolean umsatzsteuer;
 
+    private String logoUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "nutzer_id", nullable = false)
     private Nutzer nutzer;

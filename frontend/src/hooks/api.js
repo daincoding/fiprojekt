@@ -132,3 +132,13 @@ export const updateInvoiceStatus = (id, status) =>
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
     })).then(asJson);
+
+export const uploadCompanyLogo = (id, file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return fetch(`${API_URL}/companies/${id}/logo`, {
+        method: "POST",
+        credentials: "include",
+        body: fd,
+    }).then(res => res.json());
+};
