@@ -82,4 +82,10 @@ public class RechnungService {
         var r = getOwned(id, owner);
         repo.delete(r);
     }
+
+    public Rechnung updateStatusOwned(Long id, Nutzer owner, String status) {
+        var r = getOwned(id, owner);
+        r.setZahlungsstatus(status);
+        return repo.save(r);
+    }
 }

@@ -13,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/invoices")
@@ -73,5 +74,16 @@ public class InvoiceController {
         var owner = current.require();
         service.deleteOwned(id, owner);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/status")
+    public RechnungDto updateStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        var owner = current.require();
+        var newStatus = body.getOrDefault("status", "").trim();
+        if (newStatus.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "status required");
+        }
+        var updated = service.updateStatusOwned(id, owner, newStatus);
+        return RechnungDto.from(updated);
     }
 }
