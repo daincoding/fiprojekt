@@ -1,4 +1,5 @@
 import React from "react";
+import Footer from "../components/Footer"; // Footer importieren
 
 const ApiTest = () => {
     return (
@@ -7,6 +8,11 @@ const ApiTest = () => {
             <p className="text-muted mt-2">
                 Hier können später die API Hooks ausprobiert werden.
             </p>
+
+            {/* Test: Footer anzeigen */}
+            <div className="mt-10">
+                <Footer />
+            </div>
         </div>
     );
 };
