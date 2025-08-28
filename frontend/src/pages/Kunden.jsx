@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+// src/pages/Kunden.jsx
+import { useEffect, useMemo, useState } from "react";
 import { FiPlus, FiX, FiCheckCircle, FiUser, FiEdit2, FiSave, FiTrash2 } from "react-icons/fi";
 import { createCustomer, getCustomers, updateCustomer, deleteCustomer, getCompanies } from "../hooks/api.js";
 
 export default function Kunden() {
     const [customers, setCustomers] = useState([]);
     const [companies, setCompanies] = useState([]);
-    const [selectedCompanyId, setSelectedCompanyId] = useState(""); // Firma-Auswahl für Liste
+    const [selectedCompanyId, setSelectedCompanyId] = useState(""); // String für Select
     const [selected, setSelected] = useState(null);
     const [open, setOpen] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -27,8 +28,9 @@ export default function Kunden() {
             const firms = await getCompanies();
             setCompanies(firms);
             if (firms.length > 0) {
-                setSelectedCompanyId(firms[0].id); // Standard: erste Firma wählen
-                await loadCustomers(firms[0].id);
+                const firstId = String(firms[0].id);
+                setSelectedCompanyId(firstId);
+                await loadCustomers(firstId);
             }
         } catch { setErr("Konnte Firmen nicht laden"); }
     }
@@ -39,27 +41,48 @@ export default function Kunden() {
         try {
             const list = await getCustomers(companyId);
             setCustomers(list);
-            if (!selected && list.length) { setSelected(list[0]); setEdit(list[0]); }
+            // Auswahl zurücksetzen / erste setzen
+            if (list.length) {
+                setSelected(list[0]);
+                setEdit(list[0]);
+                setEditing(false);
+            } else {
+                setSelected(null);
+                setEdit(null);
+                setEditing(false);
+            }
         } catch { setErr("Konnte Kunden nicht laden"); }
     }
 
     function update(k, v) { setForm(f => ({ ...f, [k]: v })); }
     function updateEdit(k, v) { setEdit(e => ({ ...e, [k]: v })); }
 
+    function openCreate() {
+        // Modal öffnen und firmaId vorbefüllen mit aktuell gewählter Firma
+        setForm(f => ({ ...f, firmaId: selectedCompanyId || (companies[0] ? String(companies[0].id) : "") }));
+        setOpen(true);
+    }
+
     async function onCreate(e) {
         e.preventDefault(); setSaving(true); setErr("");
         try {
-            const saved = await createCustomer(form.firmaId, {
-                name: form.name,
-                strasse: form.strasse,
-                plz: form.plz,
-                ort: form.ort,
-                email: form.email,
-                telefon: form.telefon,
-            });
+            const cid = form.firmaId || selectedCompanyId;
+            if (!cid) throw new Error("Firma wählen");
+
+            const payload = {
+                name: form.name.trim(),
+                strasse: form.strasse.trim(),
+                plz: form.plz.trim(),
+                ort: form.ort.trim(),
+                email: form.email.trim(),
+                telefon: form.telefon.trim(),
+            };
+
+            const saved = await createCustomer(cid, payload);
             setSuccess(true); setOpen(false);
             setForm({ name: "", strasse: "", plz: "", ort: "", email: "", telefon: "", firmaId: "" });
-            await loadCustomers(form.firmaId);
+
+            await loadCustomers(cid);
             setSelected(saved); setEdit(saved);
             setTimeout(() => setSuccess(false), 1600);
         } catch { setErr("Speichern fehlgeschlagen"); }
@@ -70,7 +93,16 @@ export default function Kunden() {
         if (!selected || !edit) return;
         setSaving(true); setErr("");
         try {
-            const upd = await updateCustomer(selected.id, edit);
+            // nur erlaubte Felder schicken
+            const payload = {
+                name: edit.name?.trim() ?? "",
+                strasse: edit.strasse?.trim() ?? "",
+                plz: edit.plz?.trim() ?? "",
+                ort: edit.ort?.trim() ?? "",
+                email: edit.email?.trim() ?? "",
+                telefon: edit.telefon?.trim() ?? "",
+            };
+            const upd = await updateCustomer(selected.id, payload);
             setSuccess(true);
             const newList = customers.map(c => c.id === upd.id ? upd : c);
             setCustomers(newList);
@@ -99,6 +131,12 @@ export default function Kunden() {
         finally { setSaving(false); }
     }
 
+    const companyNameById = useMemo(() => {
+        const map = new Map();
+        companies.forEach(f => map.set(String(f.id), f.name));
+        return map;
+    }, [companies]);
+
     return (
         <div className="container-page py-6">
             <div className="flex items-center justify-between mb-5">
@@ -108,10 +146,10 @@ export default function Kunden() {
                 <div className="flex items-center gap-3">
                     {success && (
                         <span className="inline-flex items-center gap-2 text-sm md:text-base text-white bg-green-600/80 px-3 py-1 rounded-full">
-                            <FiCheckCircle /> erledigt
-                        </span>
+              <FiCheckCircle /> erledigt
+            </span>
                     )}
-                    <button onClick={() => setOpen(true)} className="btn btn-primary inline-flex items-center gap-2">
+                    <button onClick={openCreate} className="btn btn-primary inline-flex items-center gap-2">
                         <FiPlus /> Neuen Kunden anlegen
                     </button>
                 </div>
@@ -123,15 +161,19 @@ export default function Kunden() {
             <div className="mb-4">
                 <label className="form-label">Firma wählen:</label>
                 <select
-                    className="input"
+                    className="select"
                     value={selectedCompanyId}
                     onChange={e => {
-                        setSelectedCompanyId(e.target.value);
-                        loadCustomers(e.target.value);
+                        const cid = e.target.value;
+                        setSelectedCompanyId(cid);
+                        setSelected(null);
+                        setEdit(null);
+                        setEditing(false);
+                        loadCustomers(cid);
                     }}
                 >
                     {companies.map(f => (
-                        <option key={f.id} value={f.id}>{f.name}</option>
+                        <option key={f.id} value={String(f.id)}>{f.name}</option>
                     ))}
                 </select>
             </div>
@@ -186,7 +228,7 @@ export default function Kunden() {
                                 </div>
 
                                 {!editing ? (
-                                    <Display selected={selected} />
+                                    <Display selected={selected} companyName={companyNameById.get(String(selectedCompanyId))} />
                                 ) : (
                                     <EditForm edit={edit} onChange={updateEdit} />
                                 )}
@@ -218,14 +260,14 @@ export default function Kunden() {
                             <div className="md:col-span-2">
                                 <label className="form-label">Firma *</label>
                                 <select
-                                    className="input"
+                                    className="select"
                                     value={form.firmaId}
                                     onChange={e => update("firmaId", e.target.value)}
                                     required
                                 >
                                     <option value="">Wähle eine Firma…</option>
                                     {companies.map(f => (
-                                        <option key={f.id} value={f.id}>{f.name}</option>
+                                        <option key={f.id} value={String(f.id)}>{f.name}</option>
                                     ))}
                                 </select>
                             </div>
@@ -244,15 +286,15 @@ export default function Kunden() {
     );
 }
 
-function Display({ selected }) {
+function Display({ selected, companyName }) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <KV label="Firma" value={companyName || `Firma #${selected.firmaId ?? "—"}`} />
             <KV label="Straße" value={selected.strasse} />
             <KV label="PLZ" value={selected.plz} />
             <KV label="Ort" value={selected.ort} />
             <KV label="E-Mail" value={selected.email} />
             <KV label="Telefon" value={selected.telefon} />
-            <KV label="Firma-ID" value={selected.firma?.id || "—"} />
         </div>
     );
 }

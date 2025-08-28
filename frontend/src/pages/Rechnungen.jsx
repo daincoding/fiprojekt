@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FiRefreshCw, FiClock, FiFileText, FiAlertTriangle, FiCheckCircle } from "react-icons/fi";
 import { LuEuro } from "react-icons/lu";
 import { getCompanies, getInvoices, getCustomers, updateInvoiceStatus } from "../hooks/api.js";
+import InvoiceFilters from "../components/InvoiceFilters.jsx";
 
 const STATI = ["OFFEN", "BEZAHLT", "STORNIERT"];
 
@@ -16,11 +17,51 @@ export default function Rechnungen() {
     const [err, setErr] = useState("");
     const [ok, setOk] = useState(false);
 
+    const [customerId, setCustomerId] = useState("");
+    const [statusFilter, setStatusFilter] = useState("");
+    const [sortBy, setSortBy] = useState("deadline-asc");
+    const [search, setSearch] = useState("");
+
+    // Filter Funktionen
+    const visibleInvoices = useMemo(() => {
+        let arr = [...invoices];
+
+        // Kunde
+        if (customerId) {
+            arr = arr.filter(i => String(i.kundeId) === String(customerId));
+        }
+        // Status
+        if (statusFilter) {
+            arr = arr.filter(i => i.zahlungsstatus === statusFilter);
+        }
+        // Suche Rechnungsnummer
+        if (search.trim()) {
+            const q = search.trim().toLowerCase();
+            arr = arr.filter(i => (i.rechnungsnummer || "").toLowerCase().includes(q));
+        }
+        // Sortierung
+        // const toDate = s => s ? new Date(s.replaceAll(".", "-")) : new Date(0);
+        const toNum  = v => typeof v === "number" ? v : parseFloat(v ?? 0);
+
+        switch (sortBy) {
+            case "deadline-asc":  arr.sort((a,b)=> (a.deadline||"").localeCompare(b.deadline||"")); break;
+            case "deadline-desc": arr.sort((a,b)=> (b.deadline||"").localeCompare(a.deadline||"")); break;
+            case "date-asc":      arr.sort((a,b)=> (a.datum||"").localeCompare(b.datum||"")); break;
+            case "date-desc":     arr.sort((a,b)=> (b.datum||"").localeCompare(a.datum||"")); break;
+            case "amount-desc":   arr.sort((a,b)=> toNum(b.betrag) - toNum(a.betrag)); break;
+            case "amount-asc":    arr.sort((a,b)=> toNum(a.betrag) - toNum(b.betrag)); break;
+            case "number-asc":    arr.sort((a,b)=> String(a.rechnungsnummer||"").localeCompare(String(b.rechnungsnummer||""))); break;
+            case "number-desc":   arr.sort((a,b)=> String(b.rechnungsnummer||"").localeCompare(String(a.rechnungsnummer||""))); break;
+            default: break;
+        }
+        return arr;
+    }, [invoices, customerId, statusFilter, search, sortBy]);
+
     useEffect(() => { init(); }, []);
     useEffect(() => {
         if (companyId === "ALL") {
-            setCustomers([]);              // kein Kunden-Mapping im ALL-Mode
-            loadInvoices(null);            // Backend: liefert alle Rechnungen
+            loadInvoices(null);
+            loadAllCustomers();
         } else if (companyId) {
             loadCustomers(companyId);
             loadInvoices(companyId);
@@ -50,15 +91,48 @@ export default function Rechnungen() {
         finally { setLoading(false); }
     }
 
+    async function loadAllCustomers() {
+        try {
+            if (!companies.length) {
+                const list = await getCompanies();
+                setCompanies(list);
+                // und dann weiter
+                const all = await fetchAllCustomers(list);
+                setCustomers(all);
+                return;
+            }
+            const all = await fetchAllCustomers(companies);
+            setCustomers(all);
+        } catch {
+            setErr("Kunden konnten nicht geladen werden");
+        }
+    }
+
+    async function fetchAllCustomers(firms) {
+        const results = await Promise.all(
+            firms.map(f => getCustomers(String(f.id)).catch(() => []))
+        );
+        const merged = [];
+        const seen = new Set();
+        for (const arr of results) {
+            for (const k of arr) {
+                if (!seen.has(k.id)) {
+                    seen.add(k.id);
+                    merged.push(k);
+                }
+            }
+        }
+        return merged;
+    }
+
     const customerById = useMemo(() => {
         const map = new Map();
-        customers.forEach(c => map.set(c.id, c));
+        customers.forEach(c => map.set(String(c.id), c));
         return map;
     }, [customers]);
 
     function labelForCustomer(id) {
-        if (companyId === "ALL") return `Kunde #${id}`; // Fallback ohne geladenen Kunden
-        const k = customerById.get(id);
+        const k = customerById.get(String(id));
         return k ? k.name : `Kunde #${id}`;
     }
 
@@ -74,41 +148,58 @@ export default function Rechnungen() {
 
     return (
         <div className="container-page py-6">
-            <div className="flex items-center justify-between mb-5">
+            <div className="mb-5 flex items-center justify-between gap-3">
                 <h1 className="text-2xl md:text-3xl font-bold inline-flex items-center gap-2">
                     <FiFileText className="opacity-90" /> Rechnungs Übersicht
                 </h1>
+
                 <div className="flex items-center gap-3">
                     {ok && (
-                        <span className="inline-flex items-center gap-2 text-white bg-green-600/80 px-3 py-1 rounded-full">
-              <FiCheckCircle /> gespeichert
-            </span>
+                        <span className="hidden sm:inline-flex items-center gap-2 text-white bg-green-600/80 px-3 py-1 rounded-full">
+        <FiCheckCircle /> gespeichert
+      </span>
                     )}
-                    <select
-                        className="select"
-                        value={companyId}
-                        onChange={e => setCompanyId(e.target.value)}
+                    <button
+                        className="btn btn-outline-primary inline-flex items-center gap-2"
+                        onClick={() => loadInvoices(companyId === "ALL" ? null : companyId)}
+                        disabled={loading}
                     >
-                        <option value="ALL">Alle Firmen</option>
-                        {companies.map(c => (
-                            <option key={c.id} value={String(c.id)}>{c.name}</option>
-                        ))}
-                    </select>
-                    <button className="btn btn-outline-primary inline-flex items-center gap-2"
-                            onClick={() => loadInvoices(companyId === "ALL" ? null : companyId)}
-                            disabled={loading}>
                         <FiRefreshCw className={loading ? "animate-spin" : ""} /> Aktualisieren
                     </button>
                 </div>
             </div>
 
+            {/* Filter-Leiste: volle Breite, eigener Block */}
+            <div className="mb-6">
+                <InvoiceFilters
+                    companies={companies}
+                    customers={customers}
+                    companyId={companyId}
+                    onCompanyChange={setCompanyId}
+                    customerId={customerId}
+                    onCustomerChange={setCustomerId}
+                    status={statusFilter}
+                    onStatusChange={setStatusFilter}
+                    sortBy={sortBy}
+                    onSortByChange={setSortBy}
+                    search={search}
+                    onSearchChange={setSearch}
+                    onClear={() => {
+                        setCustomerId("");
+                        setStatusFilter("");
+                        setSortBy("deadline-asc");
+                        setSearch("");
+                    }}
+                />
+            </div>
+
             {err && <div className="badge-danger rounded-full px-3 py-1 mb-4 inline-block">{err}</div>}
 
-            {invoices.length === 0 ? (
+            {visibleInvoices.length === 0 ? (
                 <div className="card text-muted">Keine Rechnungen vorhanden.</div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                    {invoices.map(inv => (
+                    {visibleInvoices.map(inv => (
                         <InvoiceCard
                             key={inv.id}
                             inv={inv}
@@ -145,7 +236,7 @@ function InvoiceCard({ inv, customerName, onChangeStatus }) {
             <Row
                 label="Betrag"
                 value={<span className="text-money font-semibold inline-flex items-center gap-1">
-          <LuEuro /> {formatMoney(inv.betrag)} €
+          {formatMoney(inv.betrag)}  <LuEuro />
         </span>}
             />
         </div>
