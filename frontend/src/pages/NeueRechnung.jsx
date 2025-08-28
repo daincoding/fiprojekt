@@ -145,7 +145,8 @@ export default function NeueRechnung() {
                     <div className="md:col-span-1">
                         <label className="form-label">Rechnungsnummer *</label>
                         <input className="input" name="rechnungsnummer" value={form.rechnungsnummer}
-                               onChange={onFormChange} required placeholder="z. B. 2025-001" />
+                               onChange={onFormChange} required pattern="^[A-Za-z0-9\-]{5,}$"
+                               title="Nur Buchstaben, Zahlen und Bindestriche erlaubt (mind. 5 Zeichen)" placeholder="z. B. 2025-001" />
                     </div>
 
                     <div className="md:col-span-1">
