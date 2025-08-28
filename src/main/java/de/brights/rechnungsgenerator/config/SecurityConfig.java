@@ -45,7 +45,8 @@ public class SecurityConfig {
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowedOrigins(List.of("http://localhost:5173"));
         cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
-        cfg.setAllowedHeaders(List.of("Content-Type","Authorization","Accept"));
+        cfg.setAllowedHeaders(List.of("*")); // <- großzügig
+        cfg.setExposedHeaders(List.of("Content-Disposition")); // <- für Downloads
         cfg.setAllowCredentials(true);
         cfg.setMaxAge(3600L);
 
