@@ -10,7 +10,7 @@ Content-Type: application/json
 }
 
 ### Benutzer registrieren
-POST http://localhost:8080/api/users/register
+POST http://localhost:8080/api/auth/register
 Content-Type: application/json
 
 {
