@@ -39,6 +39,15 @@ public class Firma {
 
     private String logoUrl;
 
+    @Column(length = 80)
+    private String bank;
+
+    @Column(length = 34)
+    private String iban;
+
+    @Column(length = 11)
+    private String bic;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "nutzer_id", nullable = false)
     private Nutzer nutzer;

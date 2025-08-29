@@ -36,6 +36,12 @@ public class FirmaService {
     @Transactional
     public Firma create(Firma f, Nutzer owner){
         f.setNutzer(owner);
+
+        // NEU: Bankdaten normalisieren
+        f.setBank(clean(f.getBank()));
+        f.setIban(normalizeIban(f.getIban()));
+        f.setBic(normalizeBic(f.getBic()));
+
         return repo.save(f);
     }
 
@@ -82,4 +88,29 @@ public class FirmaService {
 
 
     public Firma save(Firma f) { return repo.save(f); }
+
+    /* ------- Helpers ------- */
+
+    private String clean(String s) {
+        return (s == null) ? null : s.trim();
+    }
+
+    private String normalizeIban(String iban) {
+        if (iban == null || iban.isBlank()) return null;
+        var v = iban.replaceAll("\\s+", "").toUpperCase();
+        // sehr einfache Plausibilitätsprüfung (kein vollständiger IBAN-Check)
+        if (!v.matches("[A-Z]{2}[0-9A-Z]{13,32}")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ungültige IBAN");
+        }
+        return v;
+    }
+
+    private String normalizeBic(String bic) {
+        if (bic == null || bic.isBlank()) return null;
+        var v = bic.replaceAll("\\s+", "").toUpperCase(); // 8 oder 11 Zeichen
+        if (!v.matches("[A-Z0-9]{8}([A-Z0-9]{3})?")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ungültiger BIC");
+        }
+        return v;
+    }
 }

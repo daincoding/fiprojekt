@@ -1,8 +1,12 @@
+import Footer from "../components/Footer.jsx";
+
 export default function Dashboard() {
     return (
-        <div className="container-page">
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted mt-2">Übersicht deiner Firmen, Kunden und Rechnungen.</p>
+        <div className="min-h-screen flex flex-col">
+            <main className="flex-1">
+                {/* dein bestehender Dashboard-Content */}
+            </main>
+            <Footer />
         </div>
     );
 }

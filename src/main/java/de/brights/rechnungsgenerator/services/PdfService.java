@@ -22,23 +22,25 @@ public class PdfService {
 
     private static final Locale DE = Locale.GERMANY;
     private static final DateTimeFormatter DF = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-    // NBSP als nummerische Entity (openhtmltopdf mag &nbsp; nicht)
     private static final String NBSP = "&#160;";
 
-    // Preis am Zeilenende erkennen (z. B. "— 123,00 €", "- 1.234,56", " 99 EUR")
+
+    private static final String THOUS_SEP = "[\\.,\\s\\u00A0\\u202F]";
+
+
     private static final Pattern END_PRICE = Pattern.compile(
-            "(?i)\\s*(?:[-–—:]\\s*)?(\\d{1,3}(?:[\\.,]\\d{3})*(?:[\\.,]\\d{2})?|\\d+)(?:\\s*(?:€|EUR))?\\s*$");
+            "(?i)\\s*(?:[-–—:]\\s*)?(\\d{1,3}(?:" + THOUS_SEP + "\\d{3})*(?:[\\.,]\\d{2})?|\\d+(?:[\\.,]\\d{2})?)(?:\\s*(?:€|EUR))?\\s*$"
+    );
 
     public byte[] buildInvoicePdf(Rechnung r, String primaryColorHex, Path uploadDir) throws IOException {
         if (r == null) throw new IllegalArgumentException("Rechnung ist null");
         var f = r.getFirma();
         var k = r.getKunde();
 
-        // Farbe
         String color = (primaryColorHex == null || primaryColorHex.isBlank()) ? "#00A3A3" : primaryColorHex.trim();
         if (!color.startsWith("#")) color = "#" + color;
 
-        // Logo als data:URI (falls vorhanden)
+        // Logo als data:URI
         String logoDataUri = null;
         if (f != null && f.getLogoUrl() != null && !f.getLogoUrl().isBlank() && uploadDir != null) {
             Files.createDirectories(uploadDir);
@@ -67,7 +69,7 @@ public class PdfService {
                 </div>
                 """;
 
-        // Positionstext in Zeilen aufsplitten
+        // Positionen aufsplitten
         String leistung = nvl(r.getLeistung(), "Leistung");
         String[] rawLines;
         if (leistung.contains("\n")) {
@@ -78,12 +80,12 @@ public class PdfService {
             rawLines = new String[]{ leistung };
         }
 
-        // Zeilen zu <tr> bauen: Beschreibung links, erkannter Preis rechts
+        // Zeilen -> Tabelle: links Beschreibung, rechts erkannter Preis
         StringBuilder rows = new StringBuilder();
         for (String raw : rawLines) {
             String line = raw.replace('–', '-').replace('—', '-').trim();
-            // Präfixe wie "1) " entfernen
-            line = line.replaceFirst("^\\s*\\d+\\)\\s*", "");
+            line = line.replaceFirst("^\\s*\\d+\\)\\s*", ""); // "1) " entfernen
+
             String desc = line;
             String priceHtml = NBSP;
 
@@ -93,8 +95,8 @@ public class PdfService {
                 BigDecimal parsed = parseEuro(num);
                 if (parsed != null) {
                     priceHtml = money(parsed) + " €";
-                    // Beschreibung ist der Teil vor dem gefundenen Betrag
-                    desc = line.substring(0, m.start()).replaceAll("[-:\\s]+$", "");
+                    // alles vor dem kompletten Match entfernen (inkl. Trenner und Leerzeichen davor)
+                    desc = line.substring(0, m.start()).replaceAll("[-:\\s\\u00A0\\u202F]+$", "");
                 }
             }
 
@@ -105,7 +107,7 @@ public class PdfService {
             rows.append("</tr>\n");
         }
 
-        // HTML-Template
+        // HTML
         String html = """
 <!DOCTYPE html>
 <html lang="de">
@@ -130,9 +132,22 @@ public class PdfService {
   .total { color:%(COLOR)s; font-weight:800; font-size:16px; }
   .footer { position: fixed; bottom: 0; left:0; right:0; height: 28px; background:%(COLOR)s; }
   .logo { max-height: 46px; }
-  .headergrid { width:100%; border-collapse:collapse; }
+  .headergrid, .footgrid { width:100%; border-collapse:collapse; }
   .headergrid td.left  { vertical-align:top; width:60%; }
   .headergrid td.right { vertical-align:top; width:40%; text-align:right; }
+  .contactfooter {
+  position: fixed;
+  bottom: 32px; 
+  left: 18mm;
+  right: 18mm;
+  font-size: 11px;
+  }
+  .footgrid {
+  width: 100%;
+  border-collapse: collapse;
+  }
+  .footgrid td.left { text-align: left; }
+  .footgrid td.right { text-align: right; }
 </style>
 </head>
 <body>
@@ -163,7 +178,7 @@ public class PdfService {
 
 %(INFO)s
 
-<div class="mt24">
+<div class="m24">
   <table>
     <thead>
       <tr>
@@ -185,6 +200,25 @@ public class PdfService {
   </table>
 </div>
 
+<!-- Kontakt + Bank unten -->
+<div class="contactfooter">
+  <table class="footgrid">
+    <tr>
+      <td class="left">
+        <div><b>%(FIRMA_NAME)s</b></div>
+        <div class="muted">%(FIRMA_EMAIL)s</div>
+        <div class="muted">%(FIRMA_TEL)s</div>
+      </td>
+      <td class="right">
+        <div><b>Bankverbindung</b></div>
+        <div class="muted">%(BANK)s</div>
+        <div class="muted">IBAN: %(IBAN)s</div>
+        <div class="muted">BIC: %(BIC)s</div>
+      </td>
+    </tr>
+  </table>
+</div>
+
 <div class="footer"></div>
 %(LOGO)s
 
@@ -192,18 +226,22 @@ public class PdfService {
 </html>
 """;
 
-        // Logo oben rechts (über dem Strich)
+        // Logo oben rechts
         String logoHtml = "";
         if (logoDataUri != null) {
             logoHtml = "<img src=\"" + logoDataUri + "\" style=\"position:fixed; top:1mm; right:18mm; z-index:999;\" class=\"logo\" />";
         }
 
-        // Platzhalter ersetzen
         html = html.replace("%(COLOR)s", color)
                 .replace("%(FIRMA_NAME)s", esc(nvl(f != null ? f.getName() : null, "")))
                 .replace("%(FIRMA_ADDR)s", esc(nvl(f != null ? f.getStrasse() : null, "")))
                 .replace("%(FIRMA_PLZ)s",  esc(nvl(f != null ? f.getPlz() : null, "")))
                 .replace("%(FIRMA_ORT)s",  esc(nvl(f != null ? f.getOrt() : null, "")))
+                .replace("%(FIRMA_EMAIL)s", esc(nvl(f != null ? f.getEmail() : null, "")))
+                .replace("%(FIRMA_TEL)s",   esc(nvl(f != null ? f.getTelefon() : null, "")))
+                .replace("%(BANK)s", esc(nvl(f != null ? f.getBank() : null, "")))
+                .replace("%(IBAN)s", esc(nvl(f != null ? f.getIban() : null, "")))
+                .replace("%(BIC)s",  esc(nvl(f != null ? f.getBic()  : null, "")))
                 .replace("%(DATUM)s",      r.getDatum() != null ? r.getDatum().format(DF) : "")
                 .replace("%(NUMMER)s",     esc(nvl(r.getRechnungsnummer(), "")))
                 .replace("%(KUNDE_NAME)s", esc(nvl(k != null ? k.getName() : null, "")))
@@ -233,9 +271,9 @@ public class PdfService {
 
     /* ---------------- Helpers ---------------- */
 
-    // Robustes Parsen von Euro-Beträgen aus Strings
     private static BigDecimal parseEuro(String s) {
         if (s == null) return null;
+        // nur Ziffern, Punkt, Komma behalten (Leerzeichen/NBSP werden entfernt)
         String raw = s.replaceAll("[^0-9.,]", "");
         if (raw.isEmpty()) return null;
 
@@ -244,16 +282,12 @@ public class PdfService {
         String normalized;
 
         if (hasComma && hasDot) {
-            // "1.234,56" -> Tausenderpunkte raus, Komma als Dezimalpunkt
-            normalized = raw.replace(".", "").replace(',', '.');
+            normalized = raw.replace(".", "").replace(',', '.'); // 1.234,56 -> 1234.56
         } else if (hasComma) {
-            // "123,45" -> Komma als Dezimalpunkt
-            normalized = raw.replace(',', '.');
+            normalized = raw.replace(',', '.');                  // 123,45 -> 123.45
         } else {
-            // "123.45" -> Punkt als Dezimalpunkt (lassen!)
-            normalized = raw;
+            normalized = raw;                                    // 1234 oder 1234.56
         }
-
         try {
             return new BigDecimal(normalized);
         } catch (NumberFormatException e) {

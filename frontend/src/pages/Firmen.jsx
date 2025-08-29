@@ -1,7 +1,7 @@
 // src/pages/Firmen.jsx
 import { useEffect, useState } from "react";
 import { FiPlus, FiX, FiCheckCircle, FiBriefcase, FiEdit2, FiSave, FiTrash2 } from "react-icons/fi";
-import { createCompany, getCompanies, updateCompany, deleteCompany, uploadCompanyLogo } from "../hooks/api.js";
+import { createCompany, getCompanies, updateCompany, deleteCompany, uploadCompanyLogo, toApiUrl } from "../hooks/api.js";
 
 export default function Firmen() {
     const [companies, setCompanies] = useState([]);
@@ -11,31 +11,30 @@ export default function Firmen() {
     const [success, setSuccess] = useState(false);
     const [err, setErr] = useState("");
 
+    // Create-Form
     const [form, setForm] = useState({
-        name: "", strasse: "", plz: "", ort: "", email: "", ustIdNr: "", telefon: "", umsatzsteuer: true,
+        name: "", strasse: "", plz: "", ort: "", email: "", ustIdNr: "", telefon: "",
+        umsatzsteuer: true, bank: "", iban: "", bic: "",
     });
 
-    // Edit-Modell für rechte Seite
+    // Edit-Modell rechts
     const [edit, setEdit] = useState(null);
     const [editing, setEditing] = useState(false);
-    // Logo-Upload (Create & Edit)
+
+    // Logo-Dateien
     const [logoCreate, setLogoCreate] = useState(null);
-    const [logoCreatePreview, setLogoCreatePreview] = useState("");
     const [logoEdit, setLogoEdit] = useState(null);
-    const [logoEditPreview, setLogoEditPreview] = useState("");
 
     const MAX_LOGO_SIZE = 2 * 1024 * 1024; // 2 MB
-    function validateAndSetLogo(file, setFile, setPreview) {
+    function validateAndSetLogo(file, setFile) {
         if (!file) return;
         if (!file.type?.startsWith("image/")) { setErr("Nur Bilddateien sind erlaubt."); return; }
         if (file.size > MAX_LOGO_SIZE) { setErr("Logo zu groß (max. 2 MB)."); return; }
         setErr("");
         setFile(file);
-        setPreview(URL.createObjectURL(file));
-        }
+    }
 
     useEffect(() => { load(); }, []);
-
     async function load() {
         setErr("");
         try {
@@ -48,16 +47,33 @@ export default function Firmen() {
     function update(k, v) { setForm(f => ({ ...f, [k]: v })); }
     function updateEdit(k, v) { setEdit(e => ({ ...e, [k]: v })); }
 
+    // kleine Helfer fürs Frontend-Format
+    const IBAN_INPUT_PATTERN = "^[A-Za-z]{2}[0-9A-Za-z ]{13,34}$";
+    const BIC_PATTERN = "^[A-Za-z0-9]{8}([A-Za-z0-9]{3})?$";
+
+    const normalizeIbanForApi = (s) => (s || "").replace(/\s+/g, "").toUpperCase();
+    const normalizeBicForApi  = (s) => (s || "").replace(/\s+/g, "").toUpperCase();
+    const formatIbanForView   = (s) => (s || "").replace(/\s+/g, "").toUpperCase().replace(/(.{4})/g, "$1 ").trim();
+
     async function onCreate(e) {
         e.preventDefault(); setSaving(true); setErr("");
         try {
-            const saved = await createCompany(form);
+            const payload = {
+                ...form,
+                iban: normalizeIbanForApi(form.iban),
+                bic: normalizeBicForApi(form.bic),
+            };
+            let saved = await createCompany(payload);
             if (logoCreate) {
-                await uploadCompanyLogo(saved.id, logoCreate);
+                saved = await uploadCompanyLogo(saved.id, logoCreate);
             }
+
             setSuccess(true); setOpen(false);
-            setForm({ name: "", strasse: "", plz: "", ort: "", email: "", ustIdNr: "", telefon: "", umsatzsteuer: true });
-            setLogoCreate(null); setLogoCreatePreview("");
+            setForm({
+                name: "", strasse: "", plz: "", ort: "", email: "", ustIdNr: "", telefon: "",
+                umsatzsteuer: true, bank: "", iban: "", bic: "",
+            });
+            setLogoCreate(null);
             await load();
             setSelected(saved); setEdit(saved);
             setTimeout(() => setSuccess(false), 1600);
@@ -69,7 +85,7 @@ export default function Firmen() {
         if (!selected || !edit) return;
         setSaving(true); setErr("");
         try {
-            const upd = await updateCompany(selected.id, {
+            let upd = await updateCompany(selected.id, {
                 name: edit.name ?? "",
                 strasse: edit.strasse ?? "",
                 plz: edit.plz ?? "",
@@ -78,17 +94,20 @@ export default function Firmen() {
                 ustIdNr: edit.ustIdNr ?? "",
                 telefon: edit.telefon ?? "",
                 umsatzsteuer: !!edit.umsatzsteuer,
+                bank: edit.bank ?? "",
+                iban: normalizeIbanForApi(edit.iban ?? ""),
+                bic: normalizeBicForApi(edit.bic ?? ""),
             });
             if (logoEdit) {
-                await uploadCompanyLogo(upd.id, logoEdit);
+                upd = await uploadCompanyLogo(upd.id, logoEdit);
             }
+
             setSuccess(true);
-            // Liste aktualisieren & Auswahl ersetzen
             const newList = companies.map(c => c.id === upd.id ? upd : c);
             setCompanies(newList);
             setSelected(upd);
             setEdit(upd);
-            setLogoEdit(null); setLogoEditPreview("");
+            setLogoEdit(null);
             setEditing(false);
             setTimeout(() => setSuccess(false), 1600);
         } catch { setErr("Aktualisierung fehlgeschlagen"); }
@@ -121,8 +140,8 @@ export default function Firmen() {
                 <div className="flex items-center gap-3">
                     {success && (
                         <span className="inline-flex items-center gap-2 text-sm md:text-base text-white bg-green-600/80 px-3 py-1 rounded-full">
-              <FiCheckCircle /> erledigt
-            </span>
+                          <FiCheckCircle /> erledigt
+                        </span>
                     )}
                     <button onClick={() => setOpen(true)} className="btn btn-primary inline-flex items-center gap-2">
                         <FiPlus /> Neue Firma anlegen
@@ -133,7 +152,7 @@ export default function Firmen() {
             {err && <div className="badge-danger rounded-full px-3 py-1 mb-4 inline-block">{err}</div>}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Liste (1/3) */}
+                {/* Liste */}
                 <div className="md:col-span-1">
                     <div className="card p-0">
                         <div className="px-4 py-3 border-b border-default/60 font-semibold">Deine Firmen</div>
@@ -153,7 +172,7 @@ export default function Firmen() {
                     </div>
                 </div>
 
-                {/* Details (2/3) */}
+                {/* Details */}
                 <div className="md:col-span-2">
                     <div className="card">
                         {!selected ? (
@@ -181,32 +200,24 @@ export default function Firmen() {
                                     </div>
                                 </div>
 
-                                {/* Anzeige oder Edit-Form */}
                                 {editing ? (
                                     <>
-                                        <EditForm edit={edit} onChange={updateEdit} />
+                                        <EditForm
+                                            edit={edit}
+                                            onChange={(k, v) => updateEdit(k, v)}
+                                            ibanPattern={IBAN_INPUT_PATTERN}
+                                            bicPattern={BIC_PATTERN}
+                                        />
 
-                                        {/* Neues Logo (optional, max. 2 MB) */}
                                         <div className="mt-2">
                                             <label className="form-label">Neues Logo (optional, max. 2 MB)</label>
                                             <input
-                                                type="file"
-                                                accept="image/*"
-                                                className="input"
-                                                onChange={e =>
-                                                    validateAndSetLogo(
-                                                        e.target.files?.[0],
-                                                        setLogoEdit,
-                                                        setLogoEditPreview
-                                                    )
-                                                }
+                                                type="file" accept="image/*" className="input"
+                                                onChange={e => validateAndSetLogo(e.target.files?.[0], setLogoEdit)}
                                             />
-                                            {(logoEditPreview || selected.logoUrl) && (
-                                                <img
-                                                    src={logoEditPreview || selected.logoUrl}
-                                                    alt="Logo"
-                                                    className="h-12 mt-2 rounded bg-white/5 p-1 border border-default/50"
-                                                />
+                                            {selected?.logoUrl && (
+                                                <img src={toApiUrl(selected.logoUrl)} alt="Logo"
+                                                     className="h-12 mt-2 rounded bg-white/5 p-1 border border-default/50" />
                                             )}
                                         </div>
                                     </>
@@ -214,15 +225,18 @@ export default function Firmen() {
                                     <>
                                         {selected.logoUrl && (
                                             <div className="flex items-center gap-3 mb-2">
-                                                <img
-                                                    src={selected.logoUrl}
-                                                    alt="Logo"
-                                                    className="h-12 w-auto rounded bg-white/5 p-1 border border-default/50"
-                                                />
+                                                <img src={toApiUrl(selected.logoUrl)} alt="Logo"
+                                                     className="h-12 w-auto rounded bg-white/5 p-1 border border-default/50" />
                                                 <span className="text-xs text-muted">Aktuelles Firmenlogo</span>
                                             </div>
                                         )}
-                                        <Display selected={selected} />
+                                        <Display
+                                            selected={{
+                                                ...selected,
+                                                iban: formatIbanForView(selected.iban),
+                                                bic: (selected.bic || "").toUpperCase(),
+                                            }}
+                                        />
                                     </>
                                 )}
                             </div>
@@ -247,33 +261,26 @@ export default function Firmen() {
                                 <input className="input" value={form.name} onChange={e => update("name", e.target.value)} required />
                             </div>
                             <FieldInput label="Straße" v={form.strasse} set={v => update("strasse", v)} />
-                            <FieldInput label="PLZ" v={form.plz} set={v => update("plz", v)} pattern="\d{5}"
-                                        title="Bitte eine gültige deutsche Postleitzahl (5 Ziffern) eingeben" />
+                            <FieldInput label="PLZ" v={form.plz} set={v => update("plz", v)} pattern="\d{5}" />
                             <FieldInput label="Ort" v={form.ort} set={v => update("ort", v)} />
                             <FieldInput label="E-Mail" type="email" v={form.email} set={v => update("email", v)} required />
-                            <FieldInput label="Telefon" v={form.telefon} set={v => update("telefon", v)} pattern="^(\+49|0)[1-9][0-9\s\-]{3,}$"
-                                        title="Bitte eine gültige deutsche Telefonnummer eingeben" />
-                            <FieldInput label="USt-IdNr" v={form.ustIdNr} set={v => update("ustIdNr", v)} pattern="^DE[0-9]{9}$"
-                                        title="Bitte eine gültige deutsche USt-IdNr. eingeben (z.B. DE123456789)" />
+                            <FieldInput label="Telefon" v={form.telefon} set={v => update("telefon", v)} />
+                            <FieldInput label="USt-IdNr" v={form.ustIdNr} set={v => update("ustIdNr", v)} />
                             <div className="flex items-center gap-2">
                                 <input id="umsatz" type="checkbox" className="h-4 w-4"
                                        checked={form.umsatzsteuer} onChange={e => update("umsatzsteuer", e.target.checked)} />
                                 <label htmlFor="umsatz" className="form-label m-0">Umsatzsteuerpflichtig</label>
                             </div>
 
-                              {/* Logo Upload (optional, max. 2 MB) */}
-                              <div className="md:col-span-2">
+                            <FieldInput label="Bank" v={form.bank} set={v => update("bank", v)} span2 />
+                            <FieldInput label="IBAN" v={form.iban} set={v => update("iban", v.toUpperCase())} span2 />
+                            <FieldInput label="BIC" v={form.bic} set={v => update("bic", v.toUpperCase())} />
+
+                            <div className="md:col-span-2">
                                 <label className="form-label">Logo (optional, max. 2 MB)</label>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="input"
-                                  onChange={e => validateAndSetLogo(e.target.files?.[0], setLogoCreate, setLogoCreatePreview)}
-                                />
-                                {logoCreatePreview && (
-                                  <img src={logoCreatePreview} alt="Preview" className="h-12 mt-2 rounded bg-white/5 p-1 border border-default/50" />
-                                )}
-                              </div>
+                                <input type="file" accept="image/*" className="input"
+                                       onChange={e => validateAndSetLogo(e.target.files?.[0], setLogoCreate)} />
+                            </div>
 
                             <div className="md:col-span-2 flex justify-end gap-3 pt-2">
                                 <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>Abbrechen</button>
@@ -299,6 +306,9 @@ function Display({ selected }) {
             <KV label="Telefon" value={selected.telefon} />
             <KV label="USt-IdNr" value={selected.ustIdNr} />
             <KV label="Umsatzsteuer" value={selected.umsatzsteuer ? "Ja" : "Nein"} />
+            <KV label="Bank" value={selected.bank} />
+            <KV label="IBAN" value={selected.iban} />
+            <KV label="BIC" value={(selected.bic || "").toUpperCase()} />
         </div>
     );
 }
@@ -308,19 +318,19 @@ function EditForm({ edit, onChange }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FieldInput label="Name" required v={edit?.name ?? ""} set={v => onChange("name", v)} span2 />
             <FieldInput label="Straße" v={edit?.strasse ?? ""} set={v => onChange("strasse", v)} />
-            <FieldInput label="PLZ" v={edit?.plz ?? ""} set={v => onChange("plz", v)} pattern="\d{5}"
-                        title="Bitte eine gültige deutsche Postleitzahl (5 Ziffern) eingeben" />
+            <FieldInput label="PLZ" v={edit?.plz ?? ""} set={v => onChange("plz", v)} />
             <FieldInput label="Ort" v={edit?.ort ?? ""} set={v => onChange("ort", v)} />
             <FieldInput label="E-Mail" type="email" v={edit?.email ?? ""} set={v => onChange("email", v)} required />
-            <FieldInput label="Telefon" v={edit?.telefon ?? ""} set={v => onChange("telefon", v)} pattern="^(\+49|0)[1-9][0-9\s\-]{3,}$"
-                        title="Bitte eine gültige deutsche Telefonnummer eingeben" />
-            <FieldInput label="USt-IdNr" v={edit?.ustIdNr ?? ""} set={v => onChange("ustIdNr", v)} pattern="^DE[0-9]{9}$"
-                        title="Bitte eine gültige deutsche USt-IdNr. eingeben (z.B. DE123456789)" />
+            <FieldInput label="Telefon" v={edit?.telefon ?? ""} set={v => onChange("telefon", v)} />
+            <FieldInput label="USt-IdNr" v={edit?.ustIdNr ?? ""} set={v => onChange("ustIdNr", v)} />
             <div className="flex items-center gap-2">
                 <input id="umsatz_edit" type="checkbox" className="h-4 w-4"
                        checked={!!edit?.umsatzsteuer} onChange={e => onChange("umsatzsteuer", e.target.checked)} />
                 <label htmlFor="umsatz_edit" className="form-label m-0">Umsatzsteuerpflichtig</label>
             </div>
+            <FieldInput label="Bank" v={edit?.bank ?? ""} set={v => onChange("bank", v)} span2 />
+            <FieldInput label="IBAN" v={edit?.iban ?? ""} set={v => onChange("iban", v.toUpperCase())} span2 />
+            <FieldInput label="BIC" v={edit?.bic ?? ""} set={v => onChange("bic", v.toUpperCase())} />
         </div>
     );
 }
@@ -334,7 +344,7 @@ function KV({ label, value }) {
     );
 }
 
-function FieldInput({ label, v, set, type="text", required=false, span2=false, pattern, title }) {
+function FieldInput({ label, v, set, type="text", required=false, span2=false }) {
     return (
         <div className={span2 ? "md:col-span-2" : ""}>
             <label className="form-label">{label}{required && " *"}</label>
@@ -344,8 +354,6 @@ function FieldInput({ label, v, set, type="text", required=false, span2=false, p
                 value={v}
                 onChange={e => set(e.target.value)}
                 required={required}
-                pattern={pattern}
-                title={title}
             />
         </div>
     );

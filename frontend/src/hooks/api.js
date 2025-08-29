@@ -76,6 +76,11 @@ export const uploadCompanyLogo = (id, file) => {
     })).then(asJson);
 };
 
+export const toApiUrl = (path) => {
+    if (!path) return path;
+    return path.startsWith("/api/") ? `${API_URL}${path.slice(4)}` : path;
+};
+
 /* ---------- CUSTOMERS (pro Firma) ---------- */
 export const getCustomers = (companyId) =>
     fetch(`${API_URL}/customers?companyId=${encodeURIComponent(companyId)}`, withAuth()).then(asJson);
