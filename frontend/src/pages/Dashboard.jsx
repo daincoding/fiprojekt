@@ -1,12 +1,227 @@
+// src/pages/Dashboard.jsx
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Footer from "../components/Footer.jsx";
+import { FiFilePlus, FiUsers, FiClock, FiAlertTriangle, FiCheckCircle, FiXCircle, FiRefreshCw } from "react-icons/fi";
+import { FaBuilding, FaEuroSign } from "react-icons/fa";
+import { getInvoices, getCompanies } from "../hooks/api.js";
 
+/* ---------- small utils ---------- */
+const greet = () => {
+    const h = new Date().getHours();
+    if (h < 5) return "Guten Abend";
+    if (h < 11) return "Guten Morgen";
+    if (h < 18) return "Guten Tag";
+    return "Guten Abend";
+};
+const parseLocalDate = (str) => {
+    const [y, m, d] = (str || "").split("-").map((n) => parseInt(n, 10));
+    if (!y || !m || !d) return null;
+    return new Date(y, m - 1, d);
+};
+const startOfDay = (dt) => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+const formatMoney = (n) =>
+    (typeof n === "number" ? n : parseFloat(n ?? 0)).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const monthKey = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+const useNow = (ms = 1000) => {
+    const [now, setNow] = useState(() => new Date());
+    useEffect(() => { const id = setInterval(() => setNow(new Date()), ms); return () => clearInterval(id); }, [ms]);
+    return now;
+};
+
+/* ---------- page ---------- */
 export default function Dashboard() {
+    const [companies, setCompanies] = useState([]);
+    const [invoices, setInvoices] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [err, setErr] = useState("");
+    const now = useNow(1000);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                setLoading(true);
+                const [firmen, inv] = await Promise.all([getCompanies().catch(() => []), getInvoices(null)]);
+                setCompanies(firmen); setInvoices(inv);
+            } catch { setErr("Daten konnten nicht geladen werden."); } finally { setLoading(false); }
+        })();
+    }, []);
+
+    const kpis = useMemo(() => {
+        const counts = { OFFEN: 0, BEZAHLT: 0, STORNIERT: 0 };
+        let sumOffen = 0;
+        invoices.forEach((i) => {
+            counts[i.zahlungsstatus] = (counts[i.zahlungsstatus] || 0) + 1;
+            if (i.zahlungsstatus === "OFFEN") sumOffen += Number(i.betrag || 0);
+        });
+        return { counts, sumOffen };
+    }, [invoices]);
+
+    const nextDue = useMemo(() =>
+            invoices
+                .filter((i) => i.zahlungsstatus === "OFFEN" && i.deadline)
+                .sort((a, b) => (a.deadline || "").localeCompare(b.deadline || ""))
+                .slice(0, 5)
+        , [invoices]);
+
+    const series = useMemo(() => {
+        const map = new Map();
+        const today = new Date();
+        for (let back = 5; back >= 0; back--) map.set(monthKey(new Date(today.getFullYear(), today.getMonth() - back, 1)), 0);
+        invoices.forEach((i) => {
+            if (i.zahlungsstatus !== "OFFEN") return;
+            const d = parseLocalDate(i.datum || i.deadline || ""); if (!d) return;
+            const key = monthKey(new Date(d.getFullYear(), d.getMonth(), 1));
+            if (map.has(key)) map.set(key, (map.get(key) || 0) + Number(i.betrag || 0));
+        });
+        const arr = Array.from(map.entries()).map(([key, value]) => ({ key, label: key.split("-").reverse().join("."), value }));
+        const max = Math.max(1, ...arr.map((a) => a.value));
+        return { data: arr, max };
+    }, [invoices]);
+
     return (
         <div className="min-h-screen flex flex-col">
             <main className="flex-1">
-                {/* dein bestehender Dashboard-Content */}
+                <div className="container-page py-6 space-y-6">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-bold">{greet()}!</h1>
+                            <div className="text-muted">{companies.length} Firma/Firmen · {invoices.length} Rechnung/en</div>
+                            {err && <div className="badge-danger mt-2 inline-block px-3 py-1 rounded-full">{err}</div>}
+                        </div>
+                        <button className="btn btn-outline-primary inline-flex items-center gap-2" onClick={() => window.location.reload()} disabled={loading}>
+                            <FiRefreshCw className={loading ? "animate-spin" : ""} /> Aktualisieren
+                        </button>
+                    </div>
+
+                    {/* Quick actions */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <Link to="/firmen" className="card hover:bg-white/5 transition">
+                            <Tile icon={<FaBuilding className="text-cl-brand" />} title="Neue Firma anlegen" sub="Adresse, USt-ID, Logo & Bank" />
+                        </Link>
+                        <Link to="/kunden" className="card hover:bg-white/5 transition">
+                            <Tile icon={<FiUsers className="text-cl-brand" />} title="Neuen Kunden anlegen" sub="Kontaktdaten speichern" />
+                        </Link>
+                        <Link to="/rechnung-neu" className="card hover:bg-white/5 transition">
+                            <Tile icon={<FiFilePlus className="text-cl-brand" />} title="Neue Rechnung schreiben" sub="Positionen & PDF-Export" />
+                        </Link>
+                    </div>
+
+                    {/* KPI cards – now clickable */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <KPI title="Offene Rechnungen" value={kpis.counts.OFFEN || 0} sub={`${formatMoney(kpis.sumOffen)} € offen`}
+                             icon={<FiAlertTriangle />} tone="warning" to={`/rechnungen?status=OFFEN`} />
+                        <KPI title="Bezahlte Rechnungen" value={kpis.counts.BEZAHLT || 0} sub="abgeschlossen"
+                             icon={<FiCheckCircle />} tone="success" to={`/rechnungen?status=BEZAHLT`} />
+                        <KPI title="Stornierte Rechnungen" value={kpis.counts.STORNIERT || 0} sub="ohne Zahlung"
+                             icon={<FiXCircle />} tone="danger" to={`/rechnungen?status=STORNIERT`} />
+                    </div>
+
+                    {/* Chart + next due */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="card">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-lg font-semibold inline-flex items-center gap-2">
+                                    <FaEuroSign /> Offene Beträge · letzte 6 Monate — <span className="text-money">{formatMoney(kpis.sumOffen)} €</span>
+                                </h3>
+                                <div className="text-xs text-muted">Summe pro Monat</div>
+                            </div>
+                            <MiniAreaChart data={series.data} max={series.max} />
+                        </div>
+
+                        <div className="card">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-lg font-semibold inline-flex items-center gap-2"><FiClock /> Nächste Fälligkeiten</h3>
+                                <div className="text-xs text-muted">Top 5 offene Rechnungen</div>
+                            </div>
+                            {nextDue.length === 0 ? (
+                                <div className="text-muted">Keine offenen Rechnungen mit Fälligkeitsdatum.</div>
+                            ) : (
+                                <ul className="divide-y divide-default/40">
+                                    {nextDue.map((i) => (
+                                        <li key={i.id} className="py-3 flex items-center justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <div className="font-medium truncate">{i.rechnungsnummer || `#${i.id}`}</div>
+                                                <div className="text-xs text-muted">Fällig am {new Date(i.deadline).toLocaleDateString("de-DE")} · {formatMoney(i.betrag)} €</div>
+                                            </div>
+                                            <LiveCountdown target={parseLocalDate(i.deadline)} now={now} />
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </div>
+                </div>
             </main>
             <Footer />
         </div>
     );
+}
+
+/* ---------- pieces ---------- */
+function Tile({ icon, title, sub }) {
+    return (
+        <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-surface/40 border border-default/40">{icon}</div>
+            <div>
+                <div className="font-semibold">{title}</div>
+                <div className="text-xs text-muted">{sub}</div>
+            </div>
+        </div>
+    );
+}
+
+function KPI({ title, value, sub, icon, tone = "default", to }) {
+    const toneCls = tone === "success" ? "text-green-400" : tone === "warning" ? "text-amber-400" : tone === "danger" ? "text-red-400" : "text-cl-brand";
+    const content = (
+        <div className="card flex items-center justify-between cursor-pointer hover:bg-white/5 transition">
+            <div>
+                <div className="text-xs text-muted">{title}</div>
+                <div className="text-2xl font-bold">{value}</div>
+                <div className="text-xs text-muted">{sub}</div>
+            </div>
+            <div className={`text-3xl ${toneCls}`}>{icon}</div>
+        </div>
+    );
+    return to ? <Link to={to}>{content}</Link> : content;
+}
+
+/* SVG mini area chart */
+function MiniAreaChart({ data, max }) {
+    const W = 520, H = 160, P = 24;
+    const step = (W - 2 * P) / Math.max(1, (data.length || 1) - 1);
+    const pts = data.map((d, i) => ({ x: P + i * step, y: P + (1 - (d.value || 0) / max) * (H - 2 * P) }));
+    const path = pts.length
+        ? [`M ${pts[0].x} ${H - P}`, `L ${pts[0].x} ${pts[0].y}`, ...pts.slice(1).map(p => `L ${p.x} ${p.y}`), `L ${pts[pts.length - 1].x} ${H - P}`, "Z"].join(" ")
+        : "";
+    return (
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-44">
+            <rect x="1" y="1" width={W - 2} height={H - 2} rx="10" className="fill-none stroke-[color:var(--border-color,#2a2a2a)]" />
+            <path d={path} fill="var(--cl-brand,#00A3A3)" opacity="0.25" />
+            {pts.length > 1 && <polyline points={pts.map(p => `${p.x},${p.y}`).join(" ")} fill="none" stroke="var(--cl-brand,#00A3A3)" strokeWidth="2.5" />}
+            {pts.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="3" fill="var(--cl-brand,#00A3A3)" />)}
+            {data.map((d, i) => (
+                <text key={d.key} x={P + i * step} y={H - 6} textAnchor="middle" fontSize="10" fill="currentColor" opacity="0.7">
+                    {d.label}
+                </text>
+            ))}
+        </svg>
+    );
+}
+
+/* Countdown – now always green unless overdue */
+function LiveCountdown({ target, now }) {
+    if (!target) return <span className="text-xs text-muted">—</span>;
+    const ms = startOfDay(target) - now;
+    const overdue = ms < 0;
+    const abs = Math.abs(ms);
+    const total = Math.floor(abs / 1000);
+    const days = Math.floor(total / 86400);
+    const hours = Math.floor((total % 86400) / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    const seconds = total % 60;
+    const txt = `${days}d ${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+
+    if (overdue) return <span className="badge-danger inline-flex items-center gap-1"><FiAlertTriangle /> überfällig seit {txt}</span>;
+    return <span className="badge-success inline-flex items-center gap-1"><FiClock /> in {txt}</span>;
 }

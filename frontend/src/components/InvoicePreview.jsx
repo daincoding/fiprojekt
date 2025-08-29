@@ -1,8 +1,9 @@
+// InvoicePreview.jsx
 import { useEffect, useRef, useState } from "react";
 import { FiX } from "react-icons/fi";
 import { exportInvoicePDF } from "../hooks/api";
 
-export default function InvoicePreview({ invoiceId, open, onClose }) {
+export default function InvoicePreview({ invoiceId, open, onClose, customerEmail = "", subject = "" }) {
     const [color, setColor] = useState("#00A3A3");
     const [src, setSrc] = useState("");
     const lastUrlRef = useRef("");
@@ -41,6 +42,46 @@ export default function InvoicePreview({ invoiceId, open, onClose }) {
         URL.revokeObjectURL(url);
     }
 
+    // Neuer Button: E-Mail mit Anhang (wenn möglich) bzw. Fallback
+    async function onEmail() {
+        // 1) PDF erzeugen
+        const blob = await exportInvoicePDF(invoiceId, color);
+        const filename = `Rechnung-${invoiceId}.pdf`;
+
+        // 2) Versuchen, über Web Share API zu teilen (mit Datei)
+        try {
+            const file = new File([blob], filename, { type: "application/pdf" });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: subject || `Rechnung ${invoiceId}`,
+                    text: "Im Anhang finden Sie die Rechnung als PDF.",
+                });
+                return;
+            }
+        } catch {
+            // still Fallback
+        }
+
+        // 3) Fallback: mailto öffnen (ohne Anhang) + Datei downloaden,
+        // damit man sie im Mailprogramm schnell anhängen kann
+        const mailto = [
+            `mailto:${encodeURIComponent(customerEmail)}`,
+            `?subject=${encodeURIComponent(subject || `Rechnung ${invoiceId}`)}`,
+            `&body=${encodeURIComponent("Hallo,\n\nanbei die Rechnung als PDF.\n\nViele Grüße")}`,
+        ].join("");
+
+        // Download parallel anstoßen
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        // mailto öffnen
+        window.location.href = mailto;
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }
+
     if (!open) return null;
 
     return (
@@ -58,6 +99,9 @@ export default function InvoicePreview({ invoiceId, open, onClose }) {
                         />
                     </div>
                     <div className="flex items-center gap-2">
+                        <button className="btn btn-outline-primary" onClick={onEmail}>
+                            Per E-Mail teilen
+                        </button>
                         <button className="btn btn-primary" onClick={onDownload}>PDF speichern</button>
                         <button className="btn btn-ghost" onClick={onClose}><FiX /></button>
                     </div>

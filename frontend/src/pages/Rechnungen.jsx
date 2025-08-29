@@ -1,6 +1,6 @@
 // src/pages/Rechnungen.jsx
 import { useEffect, useMemo, useState } from "react";
-import { FiRefreshCw, FiClock, FiFileText, FiAlertTriangle, FiCheckCircle } from "react-icons/fi";
+import { FiRefreshCw, FiClock, FiFileText, FiAlertTriangle, FiCheckCircle, FiEye, FiMail } from "react-icons/fi";
 import { LuEuro } from "react-icons/lu";
 import { getCompanies, getInvoices, getCustomers, updateInvoiceStatus } from "../hooks/api.js";
 import InvoiceFilters from "../components/InvoiceFilters.jsx";
@@ -24,6 +24,22 @@ export default function Rechnungen() {
     const [search, setSearch] = useState("");
 
     const [previewId, setPreviewId] = useState(null);
+
+
+    const current = invoices?.find(inv => inv.id === previewId);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const status = params.get("status");
+        const s = params.get("search");
+        const cid = params.get("companyId");
+        const kid = params.get("customerId");
+        if (status) setStatusFilter(status);
+        if (s) setSearch(s);
+        if (cid) setCompanyId(cid);
+        if (kid) setCustomerId(kid);
+
+    }, []);
 
     // Filter Funktionen
     const visibleInvoices = useMemo(() => {
@@ -138,7 +154,10 @@ export default function Rechnungen() {
         const k = customerById.get(String(id));
         return k ? k.name : `Kunde #${id}`;
     }
-
+    function emailForCustomer(id) {
+        const k = customerById.get(String(id));
+        return k?.email || "";
+    }
     async function onChangeStatus(invId, newStatus) {
         try {
             const updated = await updateInvoiceStatus(invId, newStatus);
@@ -207,6 +226,7 @@ export default function Rechnungen() {
                             key={inv.id}
                             inv={inv}
                             customerName={labelForCustomer(inv.kundeId)}
+                            customerEmail={emailForCustomer(inv.kundeId)}
                             onChangeStatus={onChangeStatus}
                             onPreview={setPreviewId}   // <-- neue Prop
                         />
@@ -217,6 +237,8 @@ export default function Rechnungen() {
                 invoiceId={previewId}
                 open={!!previewId}
                 onClose={() => setPreviewId(null)}
+                customerEmail={current?.kunde?.email || current?.customer?.email || ""} // je nach Feldnamen
+                subject={`Rechnung ${current?.rechnungsnummer ?? current?.nummer ?? previewId}`}
             />
         </div>
 
@@ -224,41 +246,71 @@ export default function Rechnungen() {
 
 }
 
-function InvoiceCard({ inv, customerName, onChangeStatus, onPreview }) {
+function InvoiceCard({ inv, customerName, customerEmail, onChangeStatus, onPreview }) {
     const cd = useCountdown(inv.deadline, inv.zahlungsstatus);
 
     return (
-        <div className="card h-full flex flex-col gap-3">
-            <div className="flex items-start justify-between gap-2">
-                <div onClick={() => onPreview(inv.id)} className="cursor-pointer">
-                    <div className="text-xs text-muted">Rechnung</div>
-                    <div className="text-lg font-semibold">{inv.rechnungsnummer}</div>
+        <div className="card h-full flex flex-col justify-between gap-3">
+            <div className="flex-1 flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-2">
+                    <div onClick={() => onPreview(inv.id)} className="cursor-pointer">
+                        <div className="text-xs text-muted">Rechnung</div>
+                        <div className="text-lg font-semibold">{inv.rechnungsnummer}</div>
+                    </div>
+                    <StatusSelect value={inv.zahlungsstatus} onChange={s => onChangeStatus(inv.id, s)} />
                 </div>
-                <StatusSelect value={inv.zahlungsstatus} onChange={s => onChangeStatus(inv.id, s)} />
+
+                <Row
+                    label="Kunde"
+                    value={
+                        <div className="flex flex-col items-end">
+                            <span>{customerName}</span>
+                            {customerEmail && <span className="text-xs text-muted">{customerEmail}</span>}
+                        </div>
+                    }
+                />
+
+                <Row label="Datum" value={formatDate(inv.datum)} />
+
+                <Row
+                    label="Fällig bis"
+                    value={
+                        <span className="inline-flex items-center gap-2">
+              {formatDate(inv.deadline)} {cd && <BadgeCountdown {...cd} />}
+            </span>
+                    }
+                />
+
+                <Row
+                    label="Betrag"
+                    value={
+                        <span className="text-money font-semibold inline-flex items-center gap-1">
+              {formatMoney(inv.betrag)} <LuEuro />
+            </span>
+                    }
+                />
             </div>
 
-            <Row label="Kunde" value={customerName} />
-            <Row label="Datum" value={formatDate(inv.datum)} />
-            <Row
-                label="Fällig bis"
-                value={
-                    <span className="inline-flex items-center gap-2">
-            {formatDate(inv.deadline)} {cd && <BadgeCountdown {...cd} />}
-          </span>
-                }
-            />
-            <Row
-                label="Betrag"
-                value={
-                    <span className="text-money font-semibold inline-flex items-center gap-1">
-            {formatMoney(inv.betrag)} <LuEuro />
-          </span>
-                }
-            />
+            {/* Buttons unten */}
+            <div className="flex gap-2 mt-3">
+                <button
+                    className="btn btn-outline-primary flex-1 inline-flex items-center justify-center gap-2"
+                    onClick={() => onPreview(inv.id)}
+                >
+                    <FiEye /> Vorschau
+                </button>
+                <a
+                    href={`mailto:${encodeURIComponent(customerEmail)}?subject=${encodeURIComponent(`Rechnung ${inv.rechnungsnummer || inv.id}`)}`}
+                    className="btn btn-outline-primary flex-1 inline-flex items-center justify-center gap-2"
+                >
+                    <FiMail /> Mail
+                </a>
+            </div>
         </div>
     );
 }
 
+/* Kleine Anzeige-Zeile (wieder hinzufügen!) */
 function Row({ label, value }) {
     return (
         <div className="flex items-center justify-between">
