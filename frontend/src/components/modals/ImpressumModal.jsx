@@ -1,14 +1,27 @@
+import ModalBase from "./ModalBase";
+
 export default function ImpressumModal({ onClose }) {
     return (
-        <div className="modal">
-            <h2 className="text-xl font-semibold mb-2">Impressum</h2>
-            <p className="text-muted">
-                RechnungsApp GmbH<br />
-                Musterstraße 12<br />
-                30159 Hannover<br />
-                Geschäftsführer: Dominik Mustermann
-            </p>
-            <button className="btn btn-primary mt-4" onClick={onClose}>Schließen</button>
-        </div>
+        <ModalBase title="Impressum" onClose={onClose} width="max-w-2xl">
+            <div className="prose prose-invert max-w-none">
+                <p><strong>Dienstanbieter:</strong><br/>RechnungsApp (Beispiel GmbH)</p>
+                <p>
+                    Musterstraße 12<br/>
+                    12345 Musterstadt<br/>
+                    Deutschland
+                </p>
+                <p>
+                    E-Mail: info@rechnungsapp.de<br/>
+                    Telefon: +49 123 456789
+                </p>
+                <p>
+                    Vertretungsberechtigt: Max Mustermann<br/>
+                    USt-IdNr.: DE123456789
+                </p>
+                <p>
+                    Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV: Max Mustermann, Anschrift wie oben.
+                </p>
+            </div>
+        </ModalBase>
     );
 }

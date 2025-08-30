@@ -5,6 +5,7 @@ import { LuEuro } from "react-icons/lu";
 import { getCompanies, getInvoices, getCustomers, updateInvoiceStatus } from "../hooks/api.js";
 import InvoiceFilters from "../components/InvoiceFilters.jsx";
 import InvoicePreview from "../components/InvoicePreview.jsx";
+import { motion, AnimatePresence } from "framer-motion";
 
 const STATI = ["OFFEN", "BEZAHLT", "STORNIERT"];
 

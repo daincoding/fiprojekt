@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { motion } from "framer-motion";
 
 export default function Register() {
     const { register } = useAuth();
@@ -21,14 +22,66 @@ export default function Register() {
     }
 
     return (
-        <div className="container-page max-w-md">
-            <h1 className="text-3xl font-bold mb-4">Registrieren</h1>
-            {err && <div className="badge-danger rounded-full mb-3 inline-block px-3 py-1">{err}</div>}
-            <form onSubmit={onSubmit} className="space-y-3">
-                <input className="input" type="email" placeholder="E-Mail" value={email} onChange={e=>setEmail(e.target.value)} required />
-                <input className="input" type="password" placeholder="Passwort (min. 8 Zeichen)" value={password} onChange={e=>setPassword(e.target.value)} required />
-                <button className="btn btn-primary w-full">Account erstellen</button>
-            </form>
-        </div>
+        <motion.div
+            className="container-page max-w-md"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+        >
+            <motion.h1
+                className="text-3xl font-bold mb-4"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.35 }}
+            >
+                Registrieren
+            </motion.h1>
+
+            {err && (
+                <motion.div
+                    className="badge-danger rounded-full mb-3 inline-block px-3 py-1"
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                >
+                    {err}
+                </motion.div>
+            )}
+
+            <motion.form
+                onSubmit={onSubmit}
+                className="space-y-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+            >
+                <motion.input
+                    className="input"
+                    type="email"
+                    placeholder="E-Mail"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    whileFocus={{ scale: 1.02, borderColor: "#00A3A3" }}
+                />
+                <motion.input
+                    className="input"
+                    type="password"
+                    placeholder="Passwort (min. 8 Zeichen)"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    whileFocus={{ scale: 1.02, borderColor: "#00A3A3" }}
+                />
+                <motion.button
+                    className="btn btn-primary w-full"
+                    type="submit"
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.97 }}
+                >
+                    Account erstellen
+                </motion.button>
+            </motion.form>
+        </motion.div>
     );
 }

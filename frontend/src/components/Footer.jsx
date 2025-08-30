@@ -1,6 +1,7 @@
+// src/components/Footer.jsx
 import { useAuth } from "../context/AuthContext";
 import { useState } from "react";
-import { FiGithub, FiLinkedin, FiMail } from "react-icons/fi";
+import { FiGithub, FiMail } from "react-icons/fi";
 import AboutModal from "./modals/AboutModal";
 import ContactModal from "./modals/ContactModal";
 import FaqModal from "./modals/FaqModal";
@@ -19,36 +20,38 @@ export default function Footer() {
                 <div>
                     <h4 className="font-semibold text-white mb-3">RechnungsApp</h4>
                     <ul className="space-y-2 text-sm">
-                        <li><a href="#" onClick={(e) => { e.preventDefault(); setModal("about"); }}>Über uns</a></li>
-                        <li><a href="#" onClick={(e) => { e.preventDefault(); setModal("contact"); }}>Kontakt</a></li>
-                        <li><a href="#" onClick={(e) => { e.preventDefault(); setModal("faq"); }}>FAQ</a></li>
+                        <li><button className="link" onClick={() => setModal("about")}>Über uns</button></li>
+                        <li><button className="link" onClick={() => setModal("contact")}>Kontakt</button></li>
+                        <li><button className="link" onClick={() => setModal("faq")}>FAQ</button></li>
                     </ul>
                 </div>
+
                 {user && (
-                <div>
-                    <h4 className="font-semibold text-white mb-3">Funktionen</h4>
-                    <ul className="space-y-2 text-sm">
-                        <li><a href="/firmen">Firmen verwalten</a></li>
-                        <li><a href="/kunden">Kunden anlegen</a></li>
-                        <li><a href="/rechnung-neu">Rechnungen erstellen</a></li>
-                        <li><a href="/rechnungen">Rechnungen exportieren</a></li>
-                    </ul>
-                </div>
-                    )}
+                    <div>
+                        <h4 className="font-semibold text-white mb-3">Funktionen</h4>
+                        <ul className="space-y-2 text-sm">
+                            <li><a href="/firmen">Firmen verwalten</a></li>
+                            <li><a href="/kunden">Kunden anlegen</a></li>
+                            <li><a href="/rechnung-neu">Rechnungen erstellen</a></li>
+                            <li><a href="/rechnungen">Rechnungen exportieren</a></li>
+                        </ul>
+                    </div>
+                )}
+
                 <div>
                     <h4 className="font-semibold text-white mb-3">Rechtliches</h4>
                     <ul className="space-y-2 text-sm">
-                        <li><a href="#" onClick={(e) => { e.preventDefault(); setModal("agb"); }}>AGB</a></li>
-                        <li><a href="#" onClick={(e) => { e.preventDefault(); setModal("privacy"); }}>Datenschutz</a></li>
-                        <li><a href="#" onClick={(e) => { e.preventDefault(); setModal("impressum"); }}>Impressum</a></li>
+                        <li><button className="link" onClick={() => setModal("agb")}>AGB</button></li>
+                        <li><button className="link" onClick={() => setModal("privacy")}>Datenschutz</button></li>
+                        <li><button className="link" onClick={() => setModal("impressum")}>Impressum</button></li>
                     </ul>
                 </div>
 
                 <div>
                     <h4 className="font-semibold text-white mb-3">Folge uns</h4>
                     <div className="flex gap-4 text-xl">
-                        <a href="#" className="hover:text-white"><FiGithub /></a>
-                        <a href="mailto:info@rechnungsapp.de" className="hover:text-white"><FiMail /></a>
+                        <a href="https://github.com/daincoding/fiprojekt" className="hover:text-white" aria-label="GitHub"><FiGithub /></a>
+                        <a href="mailto:info@rechnungsapp.de" className="hover:text-white" aria-label="E-Mail"><FiMail /></a>
                     </div>
                 </div>
             </div>
@@ -57,6 +60,7 @@ export default function Footer() {
                 © {new Date().getFullYear()} RechnungsApp – Alle Rechte vorbehalten
             </div>
 
+            {/* Modals – dank ModalBase erscheinen sie als Overlay über allem */}
             {modal === "about" && <AboutModal onClose={closeModal} />}
             {modal === "contact" && <ContactModal onClose={closeModal} />}
             {modal === "faq" && <FaqModal onClose={closeModal} />}

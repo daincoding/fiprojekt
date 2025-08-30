@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FiX } from "react-icons/fi";
 import { exportInvoicePDF } from "../hooks/api";
+import { AnimatePresence, motion } from "framer-motion";
 
 export default function InvoicePreview({ invoiceId, open, onClose, customerEmail = "", subject = "" }) {
     const [color, setColor] = useState("#00A3A3");
@@ -85,36 +86,97 @@ export default function InvoicePreview({ invoiceId, open, onClose, customerEmail
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex">
-            <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-            <div className="relative ml-auto w-full md:w-[900px] h-full bg-[#121212] p-4 flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <label className="form-label m-0">Akzentfarbe</label>
-                        <input
-                            type="color"
-                            value={color}
-                            onChange={e => setColor(e.target.value)}
-                            className="h-8 w-12 rounded border border-default/50 bg-transparent"
-                        />
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button className="btn btn-outline-primary" onClick={onEmail}>
-                            Per E-Mail teilen
-                        </button>
-                        <button className="btn btn-primary" onClick={onDownload}>PDF speichern</button>
-                        <button className="btn btn-ghost" onClick={onClose}><FiX /></button>
-                    </div>
-                </div>
+        <AnimatePresence>
+            {open && (
+                <div className="fixed inset-0 z-50 flex">
+                    {/* Backdrop */}
+                    <motion.div
+                        className="absolute inset-0 bg-black/60"
+                        onClick={onClose}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    />
 
-                <div className="flex-1 overflow-hidden rounded-xl border border-default/40 bg-black">
-                    {src ? (
-                        <iframe title="invoice-pdf" src={src} className="w-full h-full" />
-                    ) : (
-                        <div className="p-6 text-muted">Lade Vorschau…</div>
-                    )}
+                    {/* Slide-in Panel */}
+                    <motion.div
+                        className="relative ml-auto w-full md:w-[900px] h-full bg-[#121212] p-4 flex flex-col gap-3 shadow-2xl"
+                        initial={{ x: 40, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: 40, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 260, damping: 22 }}
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between">
+                            <motion.div
+                                className="flex items-center gap-3"
+                                initial={{ opacity: 0, y: -6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.05 }}
+                            >
+                                <label className="form-label m-0">Akzentfarbe</label>
+                                <motion.input
+                                    type="color"
+                                    value={color}
+                                    onChange={e => setColor(e.target.value)}
+                                    className="h-8 w-12 rounded border border-default/50 bg-transparent"
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.97 }}
+                                />
+                            </motion.div>
+
+                            <motion.div
+                                className="flex items-center gap-2"
+                                initial="hidden"
+                                animate="show"
+                                variants={{
+                                    hidden: { opacity: 0, y: -6 },
+                                    show: { opacity: 1, y: 0, transition: { staggerChildren: 0.05 } },
+                                }}
+                            >
+                                <motion.button
+                                    className="btn btn-outline-primary"
+                                    onClick={onEmail}
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.98 }}
+                                >
+                                    Per E-Mail teilen
+                                </motion.button>
+                                <motion.button
+                                    className="btn btn-primary"
+                                    onClick={onDownload}
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.98 }}
+                                >
+                                    PDF speichern
+                                </motion.button>
+                                <motion.button
+                                    className="btn btn-ghost"
+                                    onClick={onClose}
+                                    whileHover={{ rotate: 90 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    <FiX />
+                                </motion.button>
+                            </motion.div>
+                        </div>
+
+                        {/* Preview */}
+                        <motion.div
+                            className="flex-1 overflow-hidden rounded-xl border border-default/40 bg-black"
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 8 }}
+                        >
+                            {src ? (
+                                <iframe title="invoice-pdf" src={src} className="w-full h-full" />
+                            ) : (
+                                <div className="p-6 text-muted">Lade Vorschau…</div>
+                            )}
+                        </motion.div>
+                    </motion.div>
                 </div>
-            </div>
-        </div>
+            )}
+        </AnimatePresence>
     );
 }

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { FiPlus, FiX, FiCheckCircle, FiBriefcase, FiEdit2, FiSave, FiTrash2 } from "react-icons/fi";
 import { createCompany, getCompanies, updateCompany, deleteCompany, uploadCompanyLogo, toApiUrl } from "../hooks/api.js";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Firmen() {
     const [companies, setCompanies] = useState([]);
@@ -132,167 +133,302 @@ export default function Firmen() {
     }
 
     return (
-        <div className="container-page py-6">
+        <motion.div
+            className="container-page py-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+        >
             <div className="flex items-center justify-between mb-5">
-                <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+                <motion.h1
+                    className="text-2xl md:text-3xl font-bold flex items-center gap-2"
+                    initial={{ y: -8, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.35 }}
+                >
                     <FiBriefcase className="opacity-90" /> Firmen
-                </h1>
+                </motion.h1>
+
                 <div className="flex items-center gap-3">
-                    {success && (
-                        <span className="inline-flex items-center gap-2 text-sm md:text-base text-white bg-green-600/80 px-3 py-1 rounded-full">
-                          <FiCheckCircle /> erledigt
-                        </span>
-                    )}
-                    <button onClick={() => setOpen(true)} className="btn btn-primary inline-flex items-center gap-2">
+                    <AnimatePresence>
+                        {success && (
+                            <motion.span
+                                className="inline-flex items-center gap-2 text-sm md:text-base text-white bg-green-600/80 px-3 py-1 rounded-full"
+                                initial={{ y: -8, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: -8, opacity: 0 }}
+                                transition={{ duration: 0.25 }}
+                            >
+                                <FiCheckCircle /> erledigt
+                            </motion.span>
+                        )}
+                    </AnimatePresence>
+
+                    <motion.button
+                        onClick={() => setOpen(true)}
+                        className="btn btn-primary inline-flex items-center gap-2"
+                        whileHover={{ y: -2 }}
+                        whileTap={{ scale: 0.97 }}
+                    >
                         <FiPlus /> Neue Firma anlegen
-                    </button>
+                    </motion.button>
                 </div>
             </div>
 
-            {err && <div className="badge-danger rounded-full px-3 py-1 mb-4 inline-block">{err}</div>}
+            {err && (
+                <motion.div
+                    className="badge-danger rounded-full px-3 py-1 mb-4 inline-block"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                >
+                    {err}
+                </motion.div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Liste */}
-                <div className="md:col-span-1">
+                <motion.div
+                    className="md:col-span-1"
+                    initial={{ x: -10, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                >
                     <div className="card p-0">
                         <div className="px-4 py-3 border-b border-default/60 font-semibold">Deine Firmen</div>
                         <ul className="max-h-[60vh] overflow-auto">
-                            {companies.length === 0 && <li className="px-4 py-4 text-muted">Noch keine Firma angelegt.</li>}
-                            {companies.map(c => (
-                                <li
-                                    key={c.id}
-                                    onClick={() => { setSelected(c); setEdit(c); setEditing(false); }}
-                                    className={`px-4 py-3 cursor-pointer hover:bg-white/5 ${selected?.id === c.id ? "bg-white/10" : ""}`}
-                                >
-                                    <div className="font-medium">{c.name}</div>
-                                    <div className="text-xs text-muted">{c.plz || c.ort ? `${c.plz ?? ""} ${c.ort ?? ""}` : "—"}</div>
-                                </li>
-                            ))}
+                            {companies.length === 0 && (
+                                <li className="px-4 py-4 text-muted">Noch keine Firma angelegt.</li>
+                            )}
+
+                            <AnimatePresence initial={false}>
+                                {companies.map((c) => (
+                                    <motion.li
+                                        key={c.id}
+                                        onClick={() => { setSelected(c); setEdit(c); setEditing(false); }}
+                                        className={`px-4 py-3 cursor-pointer hover:bg-white/5 ${
+                                            selected?.id === c.id ? "bg-white/10" : ""
+                                        }`}
+                                        initial={{ opacity: 0, y: 6 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -6 }}
+                                        transition={{ duration: 0.18 }}
+                                    >
+                                        <div className="font-medium">{c.name}</div>
+                                        <div className="text-xs text-muted">
+                                            {c.plz || c.ort ? `${c.plz ?? ""} ${c.ort ?? ""}` : "—"}
+                                        </div>
+                                    </motion.li>
+                                ))}
+                            </AnimatePresence>
                         </ul>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Details */}
-                <div className="md:col-span-2">
+                <motion.div
+                    className="md:col-span-2"
+                    initial={{ x: 10, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                >
                     <div className="card">
                         {!selected ? (
-                            <div className="text-muted">Keine Firma ausgewählt.</div>
+                            <motion.div
+                                className="text-muted"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                            >
+                                Keine Firma ausgewählt.
+                            </motion.div>
                         ) : (
-                            <div className="space-y-4">
+                            <motion.div
+                                className="space-y-4"
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.2 }}
+                            >
                                 <div className="flex items-center justify-between">
                                     <h2 className="text-xl font-semibold">{selected.name}</h2>
                                     <div className="flex items-center gap-2">
                                         {!editing ? (
-                                            <button className="btn btn-outline-primary inline-flex items-center gap-2"
-                                                    onClick={() => { setEditing(true); setEdit(selected); }}>
+                                            <motion.button
+                                                className="btn btn-outline-primary inline-flex items-center gap-2"
+                                                onClick={() => { setEditing(true); setEdit(selected); }}
+                                                whileHover={{ y: -2 }}
+                                                whileTap={{ scale: 0.97 }}
+                                            >
                                                 <FiEdit2 /> Bearbeiten
-                                            </button>
+                                            </motion.button>
                                         ) : (
-                                            <button className="btn btn-primary inline-flex items-center gap-2"
-                                                    onClick={onSaveEdit} disabled={saving}>
+                                            <motion.button
+                                                className="btn btn-primary inline-flex items-center gap-2"
+                                                onClick={onSaveEdit}
+                                                disabled={saving}
+                                                whileHover={{ y: -2 }}
+                                                whileTap={{ scale: 0.97 }}
+                                            >
                                                 <FiSave /> {saving ? "Speichern…" : "Speichern"}
-                                            </button>
+                                            </motion.button>
                                         )}
-                                        <button className="btn btn-ghost inline-flex items-center gap-2 text-danger"
-                                                onClick={onDelete} disabled={saving}>
+                                        <motion.button
+                                            className="btn btn-ghost inline-flex items-center gap-2 text-danger"
+                                            onClick={onDelete}
+                                            disabled={saving}
+                                            whileHover={{ y: -2 }}
+                                            whileTap={{ scale: 0.97 }}
+                                        >
                                             <FiTrash2 /> Löschen
-                                        </button>
+                                        </motion.button>
                                     </div>
                                 </div>
 
                                 {editing ? (
                                     <>
-                                        <EditForm
-                                            edit={edit}
-                                            onChange={(k, v) => updateEdit(k, v)}
-                                            ibanPattern={IBAN_INPUT_PATTERN}
-                                            bicPattern={BIC_PATTERN}
-                                        />
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 6 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                        >
+                                            <EditForm
+                                                edit={edit}
+                                                onChange={(k, v) => updateEdit(k, v)}
+                                                ibanPattern={IBAN_INPUT_PATTERN}
+                                                bicPattern={BIC_PATTERN}
+                                            />
+                                        </motion.div>
 
-                                        <div className="mt-2">
+                                        <motion.div
+                                            className="mt-2"
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                        >
                                             <label className="form-label">Neues Logo (optional, max. 2 MB)</label>
                                             <input
-                                                type="file" accept="image/*" className="input"
-                                                onChange={e => validateAndSetLogo(e.target.files?.[0], setLogoEdit)}
+                                                type="file"
+                                                accept="image/*"
+                                                className="input"
+                                                onChange={(e) => validateAndSetLogo(e.target.files?.[0], setLogoEdit)}
                                             />
                                             {selected?.logoUrl && (
-                                                <img src={toApiUrl(selected.logoUrl)} alt="Logo"
-                                                     className="h-12 mt-2 rounded bg-white/5 p-1 border border-default/50" />
+                                                <motion.img
+                                                    src={toApiUrl(selected.logoUrl)}
+                                                    alt="Logo"
+                                                    className="h-12 mt-2 rounded bg-white/5 p-1 border border-default/50"
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                />
                                             )}
-                                        </div>
+                                        </motion.div>
                                     </>
                                 ) : (
                                     <>
                                         {selected.logoUrl && (
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <img src={toApiUrl(selected.logoUrl)} alt="Logo"
-                                                     className="h-12 w-auto rounded bg-white/5 p-1 border border-default/50" />
+                                            <motion.div
+                                                className="flex items-center gap-3 mb-2"
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                            >
+                                                <img
+                                                    src={toApiUrl(selected.logoUrl)}
+                                                    alt="Logo"
+                                                    className="h-12 w-auto rounded bg-white/5 p-1 border border-default/50"
+                                                />
                                                 <span className="text-xs text-muted">Aktuelles Firmenlogo</span>
-                                            </div>
+                                            </motion.div>
                                         )}
-                                        <Display
-                                            selected={{
-                                                ...selected,
-                                                iban: formatIbanForView(selected.iban),
-                                                bic: (selected.bic || "").toUpperCase(),
-                                            }}
-                                        />
+
+                                        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+                                            <Display
+                                                selected={{
+                                                    ...selected,
+                                                    iban: formatIbanForView(selected.iban),
+                                                    bic: (selected.bic || "").toUpperCase(),
+                                                }}
+                                            />
+                                        </motion.div>
                                     </>
                                 )}
-                            </div>
+                            </motion.div>
                         )}
                     </div>
-                </div>
+                </motion.div>
             </div>
 
             {/* Modal: Neue Firma */}
-            {open && (
-                <div className="fixed inset-0 z-40 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} />
-                    <div className="relative z-50 w-[92%] max-w-2xl card">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-xl font-semibold">Neue Firma anlegen</h3>
-                            <button className="btn btn-ghost px-2 py-1" onClick={() => setOpen(false)}><FiX /></button>
-                        </div>
-
-                        <form className="grid grid-cols-1 md:grid-cols-2 gap-4" onSubmit={onCreate}>
-                            <div className="md:col-span-2">
-                                <label className="form-label">Name *</label>
-                                <input className="input" value={form.name} onChange={e => update("name", e.target.value)} required />
-                            </div>
-                            <FieldInput label="Straße" v={form.strasse} set={v => update("strasse", v)} />
-                            <FieldInput label="PLZ" v={form.plz} set={v => update("plz", v)} pattern="\d{5}" />
-                            <FieldInput label="Ort" v={form.ort} set={v => update("ort", v)} />
-                            <FieldInput label="E-Mail" type="email" v={form.email} set={v => update("email", v)} required />
-                            <FieldInput label="Telefon" v={form.telefon} set={v => update("telefon", v)} />
-                            <FieldInput label="USt-IdNr" v={form.ustIdNr} set={v => update("ustIdNr", v)} />
-                            <div className="flex items-center gap-2">
-                                <input id="umsatz" type="checkbox" className="h-4 w-4"
-                                       checked={form.umsatzsteuer} onChange={e => update("umsatzsteuer", e.target.checked)} />
-                                <label htmlFor="umsatz" className="form-label m-0">Umsatzsteuerpflichtig</label>
-                            </div>
-
-                            <FieldInput label="Bank" v={form.bank} set={v => update("bank", v)} span2 />
-                            <FieldInput label="IBAN" v={form.iban} set={v => update("iban", v.toUpperCase())} span2 />
-                            <FieldInput label="BIC" v={form.bic} set={v => update("bic", v.toUpperCase())} />
-
-                            <div className="md:col-span-2">
-                                <label className="form-label">Logo (optional, max. 2 MB)</label>
-                                <input type="file" accept="image/*" className="input"
-                                       onChange={e => validateAndSetLogo(e.target.files?.[0], setLogoCreate)} />
+            <AnimatePresence>
+                {open && (
+                    <motion.div
+                        className="fixed inset-0 z-40 flex items-center justify-center"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <motion.div
+                            className="absolute inset-0 bg-black/60"
+                            onClick={() => setOpen(false)}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                        />
+                        <motion.div
+                            className="relative z-50 w-[92%] max-w-2xl card"
+                            initial={{ y: 30, opacity: 0, scale: 0.98 }}
+                            animate={{ y: 0, opacity: 1, scale: 1 }}
+                            exit={{ y: 20, opacity: 0, scale: 0.98 }}
+                            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-xl font-semibold">Neue Firma anlegen</h3>
+                                <motion.button
+                                    className="btn btn-ghost px-2 py-1"
+                                    onClick={() => setOpen(false)}
+                                    whileHover={{ rotate: 90 }}
+                                    transition={{ type: "spring", stiffness: 200, damping: 12 }}
+                                >
+                                    <FiX />
+                                </motion.button>
                             </div>
 
-                            <div className="md:col-span-2 flex justify-end gap-3 pt-2">
-                                <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>Abbrechen</button>
-                                <button type="submit" className="btn btn-primary" disabled={saving}>
-                                    {saving ? "Speichern…" : "Speichern"}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-        </div>
+                            <form className="grid grid-cols-1 md:grid-cols-2 gap-4" onSubmit={onCreate}>
+                                <div className="md:col-span-2">
+                                    <label className="form-label">Name *</label>
+                                    <input className="input" value={form.name} onChange={e => update("name", e.target.value)} required />
+                                </div>
+                                <FieldInput label="Straße" v={form.strasse} set={v => update("strasse", v)} />
+                                <FieldInput label="PLZ" v={form.plz} set={v => update("plz", v)} pattern="\d{5}" />
+                                <FieldInput label="Ort" v={form.ort} set={v => update("ort", v)} />
+                                <FieldInput label="E-Mail" type="email" v={form.email} set={v => update("email", v)} required />
+                                <FieldInput label="Telefon" v={form.telefon} set={v => update("telefon", v)} />
+                                <FieldInput label="USt-IdNr" v={form.ustIdNr} set={v => update("ustIdNr", v)} />
+                                <div className="flex items-center gap-2">
+                                    <input id="umsatz" type="checkbox" className="h-4 w-4"
+                                           checked={form.umsatzsteuer} onChange={e => update("umsatzsteuer", e.target.checked)} />
+                                    <label htmlFor="umsatz" className="form-label m-0">Umsatzsteuerpflichtig</label>
+                                </div>
+
+                                <FieldInput label="Bank" v={form.bank} set={v => update("bank", v)} span2 />
+                                <FieldInput label="IBAN" v={form.iban} set={v => update("iban", v.toUpperCase())} span2 />
+                                <FieldInput label="BIC" v={form.bic} set={v => update("bic", v.toUpperCase())} />
+
+                                <div className="md:col-span-2">
+                                    <label className="form-label">Logo (optional, max. 2 MB)</label>
+                                    <input
+                                        type="file" accept="image/*" className="input"
+                                        onChange={e => validateAndSetLogo(e.target.files?.[0], setLogoCreate)}
+                                    />
+                                </div>
+
+                                <div className="md:col-span-2 flex justify-end gap-3 pt-2">
+                                    <motion.button type="button" className="btn btn-ghost" onClick={() => setOpen(false)} whileHover={{ y: -2 }}>
+                                        Abbrechen
+                                    </motion.button>
+                                    <motion.button type="submit" className="btn btn-primary" disabled={saving} whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
+                                        {saving ? "Speichern…" : "Speichern"}
+                                    </motion.button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </motion.div>
     );
 }
 
