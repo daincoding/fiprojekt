@@ -126,7 +126,7 @@ const Home = () => {
                                     <FiUsers className="text-cl-brand" /> Kundenverwaltung
                                 </>
                             ),
-                            text: "Kunden anlegen, bearbeiten und wiederverwenden. Mit Suche &amp; Filter."
+                            text: "Kunden anlegen, bearbeiten und wiederverwenden. Mit Suche & Filter."
                         },
                         {
                             title: (
@@ -135,7 +135,7 @@ const Home = () => {
                                 </>
                             ),
                             text:
-                                "Positionen mit Netto/Brutto, MwSt., Fälligkeitsdatum &amp; Status (Entwurf, Offen, Bezahlt). Export als PDF."
+                                "Positionen mit Netto/Brutto, MwSt., Fälligkeitsdatum & Status (Entwurf, Offen, Bezahlt). Export als PDF."
                         }
                     ].map((c, i) => (
                         <motion.div
