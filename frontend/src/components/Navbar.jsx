@@ -36,8 +36,13 @@ function Navbar() {
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Link
                         to={user ? "/dashboard" : "/"}
-                        className="font-bold text-white text-lg md:text-xl tracking-wide"
+                        className="font-bold text-white text-lg md:text-xl tracking-wide flex items-center gap-2"
                     >
+                        <img
+                            src="/calculator.png"
+                            alt="Logo"
+                            className="h-6 w-6 object-contain"
+                        />
                         Rechnungsgenerator
                     </Link>
                 </motion.div>
